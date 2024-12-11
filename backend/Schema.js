@@ -7,7 +7,7 @@ const studentSchema = new mongoose.Schema(
   {
     studentName: String,
     rollNumber: String,
-    class: String,
+    class: ObjectId,
     batch: ObjectId,
     percentage: Number,
     photo: ObjectId,
@@ -20,7 +20,6 @@ const adminSchema = new mongoose.Schema(
     userName: String,
     password: String,
     master: Boolean, //If true can create admins
-    photo: ObjectId,
   },
   { versionKey: false },
 );
