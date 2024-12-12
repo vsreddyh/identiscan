@@ -71,4 +71,10 @@ module.exports = {
   PASSWORD: process.env.PASSWORD,
   JWT_SECRET: process.env.JWT_SECRET,
   SESSION_KEY: process.env.SESSION_KEY,
+  students: students,
+  admins: admins,
+  records: records,
+  activeDates: activeDates,
+  Batches: Batches,
+  classes: classes,
 };
