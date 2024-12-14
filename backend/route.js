@@ -22,6 +22,11 @@ const {
   activateToday
 } = require("./controllers/Classes.js");
 
+const {
+  getStudents,
+  addStudent,
+  // getStudentInfo
+}=require("./controllers/Students.js")
 
 router.route("/getAdmin").get(getAdmin);
 router.route("/createAdmin").post(createAdmin);
@@ -38,5 +43,9 @@ router.route("/getClass/:id").get(getClass);
 router.route("/addClass").post(addClass);
 router.route("/deleteClass/:id").get(deleteClass);
 router.route("/activateToday").post(activateToday);
+
+router.route("/getStudents").post(getStudents);
+router.route("/addStudent").post(addStudent);
+// router.route("/").get(getStudentInfo);
 
 module.exports = router;
