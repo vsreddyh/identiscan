@@ -51,6 +51,8 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Express Starter App!");
 });
 
+app.use("/admin", require("./route.js"));
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

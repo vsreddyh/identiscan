@@ -10,6 +10,7 @@ const studentSchema = new mongoose.Schema(
     class: ObjectId,
     batch: ObjectId,
     percentage: Number,
+    noOfPresentDays: Number,
     photo: ObjectId,
   },
   { versionKey: false },
@@ -17,7 +18,7 @@ const studentSchema = new mongoose.Schema(
 
 const adminSchema = new mongoose.Schema(
   {
-    userName: String,
+    username: String,
     password: String,
     master: Boolean, //If true can create admins
   },
