@@ -5,25 +5,22 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
-
-// Load environment variables
-dotenv.config();
+const { url } =
+  // Load environment variables
+  dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.url)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // MongoDB Session Store
 const store = new MongoDBStore({
-  uri: process.env.MONGO_URI,
+  uri: process.env.url,
   collection: "sessions",
 });
 

@@ -5,7 +5,7 @@ const {
   createAdmin,
   updateAdmin,
   deleteAdmin,
-} = require("./controllers/goalController.js");
+} = require("./controllers/Admin.js");
 
 router.route("/getAdmin").get(getAdmin);
 router.route("/createAdmin").post(createAdmin);
