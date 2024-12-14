@@ -1,6 +1,6 @@
 const { admins } = require("../Schema.js");
 const getAdmin = async (req, res) => {
-  const model = await admin.find();
+  const model = await admins.find({},{username:1,_id:1});
   res.status(200).json(model);
 };
 
@@ -10,16 +10,20 @@ const createAdmin = async (req, res) => {
       message: "username and password are required to create an admin",
     });
   }
-
   try {
-    const newAdmin = await admin.create({
+    await admins.create({
       username: req.body.username,
       password: req.body.password,
       master: req.body.master || false,
     });
-    res.status(200).json(newAdmin);
+
+   
+    const adminList = await admins.find({}, { username: 1, _id: 1 });
+    res.status(200).json(adminList);
+
   } catch (error) {
-    res.status(400).json({ message: "failed to create the admin" });
+    console.error("Error creating admin:", error);
+    res.status(400).json({ message: "Failed to create the admin" });
   }
 };
 
@@ -27,7 +31,8 @@ const updateAdmin = async (req, res) => {
   try {
     //TODO
     //req.body.newpassword= new password
-    const adminToUpdate = await admin.findById(req.params.id);
+    const {passowrd}=req.body.passowrd;
+    const adminToUpdate = await admins.findById(req.params.id);
     if (!adminToUpdate) {
       return res.status(404).send("unable to find admin by given id");
     }
@@ -40,20 +45,37 @@ const updateAdmin = async (req, res) => {
 };
 
 const deleteAdmin = async (req, res) => {
+  const { id } = req.params;
+  const { rootPassword } = req.body;
+
+  // Verify root password
+  //make your root password
+  if (rootPassword !== "yourrootpassword") {
+    return res.status(403).json({ message: "Invalid root password" });
+  }
+
   try {
-    const adminTodelete = await admin.findById(req.params.id);
-    if (!adminTodelete) {
-      return res.status(404).send("admin not found");
+    // Find the admin to delete
+    const adminToDelete = await admins.findById(id);
+    if (!adminToDelete) {
+      return res.status(404).json({ message: "Admin not found" });
     }
-    await admin.deleteOne({ _id: req.params.id });
+
+    // Delete the admin
+    await admins.deleteOne({ _id: id });
+
+    // Fetch updated list of admins
+    const adminList = await admins.find({}, { username: 1, _id: 1 });
+
     res.status(200).json({
-      //TODO
-      //array of admins
-      message: `the admin with id ${req.params.id} and username ${adminTodelete.username} deleted succesfully`,
+    //  message: `Admin with id ${id} and username ${adminToDelete.username} deleted successfully`,
+      admins: adminList,
     });
   } catch (error) {
-    res.status(400).json({ message: "unable to delete" });
+    console.error("Error deleting admin:", error);
+    res.status(400).json({ message: "Unable to delete admin" });
   }
 };
+
 
 module.exports = { getAdmin, createAdmin, updateAdmin, deleteAdmin };
