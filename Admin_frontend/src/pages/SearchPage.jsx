@@ -7,11 +7,7 @@ const SearchPage = () => {
     <div className="min-h-screen flex flex-col">
       <header className="flex justify-between items-center p-4 shadow-md">
         <div className="text-2xl font-bold text-gray-800">
-          <img
-            src="/path-to-your-logo.png"
-            alt="Logo"
-            className="h-10 w-auto"
-          />
+          <img src="Identiscan.png" alt="Logo" className="h-10 w-auto" />
         </div>
 
         <button

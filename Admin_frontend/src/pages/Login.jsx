@@ -1,6 +1,19 @@
 import React from "react";
 
 const Login = () => {
+  const validatePassword = (e) => {
+    const password = e.target.value;
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+    if (!regex.test(password)) {
+      e.target.setCustomValidity(
+        "Password must contain uppercase, lowercase, number, and symbol.",
+      );
+    } else {
+      e.target.setCustomValidity("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <header className="text-2xl font-bold mb-6 text-gray-800">Login</header>
@@ -9,11 +22,14 @@ const Login = () => {
           type="text"
           placeholder="Username"
           className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          required
         />
         <input
           type="password"
           placeholder="Password"
           className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onInput={validatePassword}
+          required
         />
         <button
           type="submit"
