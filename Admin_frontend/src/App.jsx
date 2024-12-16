@@ -3,6 +3,7 @@ import SearchPage from "./pages/SearchPage.jsx";
 import Login from "./pages/Login.jsx";
 import ManageAdmin from "./pages/ManageAdmin.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import StudentPage from "./pages/StudentPage.jsx";
 function App() {
   return (
     <Routes>
@@ -10,6 +11,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/manageAdmin" element={<ManageAdmin />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/student" element={<StudentPage />} />
     </Routes>
   );
 }
