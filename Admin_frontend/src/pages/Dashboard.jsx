@@ -35,6 +35,16 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 font-sans bg-gray-100 min-h-screen">
+      {/* Logout Button at the Top */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => console.log("Logging out...")}
+          className="bg-red-500 text-white py-2 px-6 rounded-lg shadow-md hover:bg-red-600 transition"
+        >
+          Logout
+        </button>
+      </div>
+
       {/* Top Row Containers */}
       <div className="flex gap-8 mb-6">
         <div className="flex-1 bg-gray-200 p-6 text-center font-semibold rounded-lg shadow-md">
@@ -44,6 +54,7 @@ const Dashboard = () => {
           Manage Classes
         </div>
       </div>
+
       {/* Dropdowns and Add Day Button */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-4">
@@ -58,6 +69,7 @@ const Dashboard = () => {
           Add Day
         </button>
       </div>
+
       {/* Filters Row */}
       <div className="flex gap-4 mb-6 items-center">
         <select className="p-2 rounded-md border border-gray-300 shadow-md focus:ring-2 focus:ring-green-500">
@@ -79,6 +91,7 @@ const Dashboard = () => {
           Add Student
         </button>
       </div>
+
       {/* Rows of Data */}
       <div className="border border-gray-300 rounded-lg overflow-hidden shadow-md">
         {rows.map((row) => (
@@ -95,6 +108,7 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
+
       {/* Show More Button */}
       {rows.length < nextRowStart && (
         <div className="text-center mt-6">
