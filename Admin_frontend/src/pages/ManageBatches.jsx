@@ -1,75 +1,93 @@
 import React, { useState } from "react";
 import {
-  UserCircleIcon,
-  PencilIcon,
-  TrashIcon,
+  AcademicCapIcon,
   PlusIcon,
-  ArrowLeftOnRectangleIcon,
+  TrashIcon,
+  ChevronDoubleUpIcon,
+  StopIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/solid";
 
-const ManageAdmins = () => {
-  const [admins, setAdmins] = useState(
+const ManageBatches = () => {
+  const [batches, setBatches] = useState(
     Array.from({ length: 50 }, (_, i) => ({
       id: i + 1,
-      name: `Admin ${i + 1}`,
-      email: `admin${i + 1}@company.com`,
+      name: `Batch ${2020 + i}`,
+      year: 2020 + i,
+      status: i < 3 ? "Active" : "Inactive",
     })),
   );
+
   const [visibleCount, setVisibleCount] = useState(10);
   const [modalMode, setModalMode] = useState(null);
-  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [selectedBatch, setSelectedBatch] = useState(null);
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    batchName: "",
+    year: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
-
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddAdmin = () => {
-    if (
-      formData.username.length < 4 ||
-      formData.password !== formData.confirmPassword ||
-      !passwordRegex.test(formData.password)
-    ) {
-      alert("Please fill in the form correctly.");
+  const handleAddBatch = () => {
+    // Validate inputs
+    if (!formData.batchName || !formData.year) {
+      alert("Please fill in all fields.");
       return;
     }
 
-    const newAdmin = {
-      id: admins.length + 1,
-      name: formData.username,
-      email: formData.email,
+    const newBatch = {
+      id: batches.length + 1,
+      name: formData.batchName,
+      year: parseInt(formData.year),
+      status: "Active",
     };
 
-    setAdmins([...admins, newAdmin]);
+    setBatches([...batches, newBatch]);
     setModalMode(null);
     setFormData({
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
+      batchName: "",
+      year: "",
     });
   };
 
-  const handleDeleteAdmin = () => {
-    setAdmins((prevAdmins) =>
-      prevAdmins.filter((admin) => admin.id !== selectedAdmin.id),
+  const handleDeleteBatch = () => {
+    setBatches((prevBatches) =>
+      prevBatches.filter((batch) => batch.id !== selectedBatch.id),
     );
     setModalMode(null);
-    setSelectedAdmin(null);
+    setSelectedBatch(null);
   };
 
-  const filteredAdmins = admins.filter((admin) =>
-    admin.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  const handlePromoteBatch = () => {
+    setBatches((prevBatches) =>
+      prevBatches.map((batch) =>
+        batch.id === selectedBatch.id
+          ? { ...batch, status: "Promoted" }
+          : batch,
+      ),
+    );
+    setModalMode(null);
+    setSelectedBatch(null);
+  };
+
+  const handleDeactivateBatch = () => {
+    setBatches((prevBatches) =>
+      prevBatches.map((batch) =>
+        batch.id === selectedBatch.id
+          ? { ...batch, status: "Inactive" }
+          : batch,
+      ),
+    );
+    setModalMode(null);
+    setSelectedBatch(null);
+  };
+
+  const filteredBatches = batches.filter((batch) =>
+    batch.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const renderModal = () => {
@@ -77,19 +95,24 @@ const ManageAdmins = () => {
 
     const modalConfig = {
       add: {
-        title: "Add New Admin",
-        submitText: "Create Admin",
-        onSubmit: handleAddAdmin,
+        title: "Add New Batch",
+        submitText: "Create Batch",
+        onSubmit: handleAddBatch,
       },
       delete: {
         title: "Confirm Deletion",
         submitText: "Delete",
-        onSubmit: handleDeleteAdmin,
+        onSubmit: handleDeleteBatch,
       },
-      changePassword: {
-        title: "Change Password",
-        submitText: "Update Password",
-        onSubmit: () => alert("Password updated"),
+      promote: {
+        title: "Promote Batch",
+        submitText: "Promote",
+        onSubmit: handlePromoteBatch,
+      },
+      deactivate: {
+        title: "Deactivate Batch",
+        submitText: "Deactivate",
+        onSubmit: handleDeactivateBatch,
       },
     };
 
@@ -127,59 +150,45 @@ const ManageAdmins = () => {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Username
+                  Batch Name
                 </label>
                 <input
                   type="text"
-                  name="username"
-                  value={formData.username}
+                  name="batchName"
+                  value={formData.batchName}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  placeholder="Enter batch name"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Email
+                  Year
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="number"
+                  name="year"
+                  value={formData.year}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  placeholder="Enter year"
                 />
               </div>
             </>
           )}
 
-          {modalMode === "delete" && (
+          {(modalMode === "delete" ||
+            modalMode === "promote" ||
+            modalMode === "deactivate") && (
             <p className="text-gray-600">
-              Are you sure you want to delete "{selectedAdmin.name}"? This
-              action cannot be undone.
+              {modalMode === "delete" &&
+                `Are you sure you want to delete "${selectedBatch.name}"?`}
+              {modalMode === "promote" &&
+                `Are you sure you want to promote "${selectedBatch.name}"?`}
+              {modalMode === "deactivate" &&
+                `Are you sure you want to deactivate "${selectedBatch.name}"?`}
+              <br />
+              This action cannot be undone.
             </p>
           )}
 
@@ -195,7 +204,11 @@ const ManageAdmins = () => {
               className={`px-4 py-2 rounded-lg transition ${
                 modalMode === "delete"
                   ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-indigo-500 text-white hover:bg-indigo-600"
+                  : modalMode === "promote"
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : modalMode === "deactivate"
+                      ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                      : "bg-indigo-500 text-white hover:bg-indigo-600"
               }`}
             >
               {currentConfig.submitText}
@@ -210,14 +223,15 @@ const ManageAdmins = () => {
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Admin Management</h1>
-          <button
-            onClick={() => alert("Logged out")}
-            className="flex items-center space-x-2 hover:bg-indigo-700 px-3 py-2 rounded-lg transition"
-          >
-            <ArrowLeftOnRectangleIcon className="h-5 w-5" />
-            <span>Logout</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => alert("Navigating back")}
+              className="hover:bg-indigo-700 p-2 rounded-lg transition"
+            >
+              <ArrowLeftIcon className="h-6 w-6" />
+            </button>
+            <h1 className="text-2xl font-bold">Batch Management</h1>
+          </div>
         </div>
 
         <div className="p-6">
@@ -225,7 +239,7 @@ const ManageAdmins = () => {
             <div className="flex-grow">
               <input
                 type="text"
-                placeholder="Search admins..."
+                placeholder="Search batches..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -236,41 +250,71 @@ const ManageAdmins = () => {
               className="flex items-center space-x-2 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition"
             >
               <PlusIcon className="h-5 w-5" />
-              <span>Add Admin</span>
+              <span>Add Batch</span>
             </button>
           </div>
 
           <div className="bg-white rounded-lg border">
-            {filteredAdmins.slice(0, visibleCount).map((admin) => (
+            {filteredBatches.slice(0, visibleCount).map((batch) => (
               <div
-                key={admin.id}
-                className="flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition"
+                key={batch.id}
+                className={`flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition ${
+                  batch.status === "Active"
+                    ? "bg-green-50 border-green-100"
+                    : "bg-red-50 border-red-100"
+                }`}
               >
                 <div className="flex items-center space-x-4">
-                  <UserCircleIcon className="h-10 w-10 text-indigo-500" />
+                  <AcademicCapIcon
+                    className={`h-10 w-10 ${
+                      batch.status === "Active"
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  />
                   <div>
                     <div className="font-semibold text-gray-800">
-                      {admin.name}
+                      {batch.name}
                     </div>
-                    <div className="text-sm text-gray-500">{admin.email}</div>
+                    <div
+                      className={`text-sm ${
+                        batch.status === "Active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      Year: {batch.year} | Status: {batch.status}
+                    </div>
                   </div>
                 </div>
                 <div className="flex space-x-3">
                   <button
                     onClick={() => {
-                      setSelectedAdmin(admin);
-                      setModalMode("changePassword");
+                      setSelectedBatch(batch);
+                      setModalMode("promote");
                     }}
-                    className="text-yellow-500 hover:text-yellow-600 transition"
+                    className="text-green-500 hover:text-green-600 transition"
+                    title="Promote"
                   >
-                    <PencilIcon className="h-5 w-5" />
+                    <ChevronDoubleUpIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => {
-                      setSelectedAdmin(admin);
+                      setSelectedBatch(batch);
+                      setModalMode("deactivate");
+                    }}
+                    className="text-yellow-500 hover:text-yellow-600 transition"
+                    title="Deactivate"
+                  >
+                    <StopIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedBatch(batch);
                       setModalMode("delete");
                     }}
                     className="text-red-500 hover:text-red-600 transition"
+                    title="Delete"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
@@ -279,7 +323,7 @@ const ManageAdmins = () => {
             ))}
           </div>
 
-          {visibleCount < filteredAdmins.length && (
+          {visibleCount < filteredBatches.length && (
             <div className="text-center mt-6">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 10)}
@@ -297,4 +341,4 @@ const ManageAdmins = () => {
   );
 };
 
-export default ManageAdmins;
+export default ManageBatches;

@@ -31,6 +31,7 @@ const adminSchema = new mongoose.Schema(
     username: String,
     password: String,
     master: Boolean, //If true can create admins
+    loggedIn: Boolean,
   },
   { versionKey: false },
 );
@@ -58,6 +59,7 @@ const batchSchema = new mongoose.Schema(
   {
     batch: String,
     year: Number,
+    active: Boolean,
   },
   { versionKey: false },
 );
