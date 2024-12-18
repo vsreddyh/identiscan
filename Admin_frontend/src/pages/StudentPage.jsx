@@ -4,7 +4,7 @@ import { ArrowLeft, UserCircle2, Award, Calendar, Trophy } from "lucide-react";
 const StudentPage = ({ onBack }) => {
   // Sample Student Data
   const studentData = {
-    photoUrl: "/api/placeholder/300/300",
+    photoUrl: "Person.jpg",
     name: "Emma Rodriguez",
     rollNo: "ST-2024-0567",
     studentClass: "12th Science",
