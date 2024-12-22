@@ -5,8 +5,8 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
-const { url } =dotenv.config();
-  // Load environment variables
+const { url } = dotenv.config();
+// Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,14 +18,14 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // MongoDB Session Store
-const store = new MongoDBStore({
-  uri: process.env.url,
-  collection: "sessions",
-});
+//const store = new MongoDBStore({
+//  uri: process.env.url,
+//  collection: "sessions",
+//});
 
-store.on("error", (error) => {
-  console.error("Session store error:", error);
-});
+//store.on("error", (error) => {
+//  console.error("Session store error:", error);
+//});
 
 // Middleware
 app.use(cors());
@@ -48,7 +48,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/admin", require("./route.js"));
-
 
 // Start Server
 app.listen(PORT, () => {
