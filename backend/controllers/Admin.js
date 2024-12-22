@@ -1,4 +1,6 @@
+const bcrypt = require('bcryptjs');
 const { admins } = require("../Schema.js");
+
 const getAdmin = async (req, res) => {
   const model = await admins.find({},{username:1,_id:1});
   res.status(200).json(model);
@@ -10,11 +12,12 @@ const createAdmin = async (req, res) => {
       message: "username and password are required to create an admin",
     });
   }
+  const  hash = bcrypt.hash(req.body.password, 10)
   try {
     await admins.create({
       username: req.body.username,
-      password: req.body.password,
-      master: req.body.master || false,
+      password: hash,
+      master: false,
     });
 
    
@@ -29,14 +32,12 @@ const createAdmin = async (req, res) => {
 
 const updateAdmin = async (req, res) => {
   try {
-    //TODO
-    //req.body.newpassword= new password
-    const {passowrd}=req.body.passowrd;
+    const  hash = bcrypt.hash(req.body.password, 10)
     const adminToUpdate = await admins.findById(req.params.id);
     if (!adminToUpdate) {
       return res.status(404).send("unable to find admin by given id");
     }
-    adminToUpdate.password = req.body.password || adminToUpdate.password;
+    adminToUpdate.password = hash || adminToUpdate.password;
     const updatedAdmin = await adminToUpdate.save();
     res.status(200).json(1);
   } catch (error) {
@@ -48,8 +49,6 @@ const deleteAdmin = async (req, res) => {
   const { id } = req.params;
   const { rootPassword } = req.body;
 
-  // Verify root password
-  //make your root password
   if (rootPassword !== "yourrootpassword") {
     return res.status(403).json({ message: "Invalid root password" });
   }
@@ -77,5 +76,22 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
+const login = async (req, res) =>{
+  try{
+    const {username,password} = req.body;
+    const admin = await admins.findOne({username:username});
+    if(!admin){
+      return res.status(404).json({message:"admin not found"});
+    }
+    const isMatch = await bcrypt.compare(password,admin.password);
+    if(!isMatch){
+      return res.status(400).json({message:"invalid password"});
+    }
+    res.status(200).json({message:"login successful",admin:admin});
+  }
+  catch(err){
+    res.status(400).json({message:"unable to login"})
+  }
+};
 
-module.exports = { getAdmin, createAdmin, updateAdmin, deleteAdmin };
+module.exports = { getAdmin, createAdmin, updateAdmin, deleteAdmin, login };

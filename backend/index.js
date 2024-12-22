@@ -18,14 +18,14 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // MongoDB Session Store
-//const store = new MongoDBStore({
-//  uri: process.env.url,
-//  collection: "sessions",
-//});
+const store = new MongoDBStore({
+  uri: process.env.url,
+  collection: "sessions",
+});
 
-//store.on("error", (error) => {
-//  console.error("Session store error:", error);
-//});
+store.on("error", (error) => {
+ console.error("Session store error:", error);
+});
 
 // Middleware
 app.use(cors());
@@ -33,14 +33,14 @@ app.use(bodyParser.json()); // Parse JSON data
 app.use(bodyParser.urlencoded({ extended: true })); // Parse form data
 
 // Session Middleware
-// app.use(
-//   session({
-//     secret: process.env.SESSION_SECRET,
-//     resave: false,
-//     saveUninitialized: false,
-//     store: store,
-//   }),
-// );
+app.use(
+  session({
+    secret: process.env.SESSION_KEY,
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  }),
+);
 
 // Test Route
 app.get("/", (req, res) => {

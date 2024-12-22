@@ -5,6 +5,7 @@ const {
   createAdmin,
   updateAdmin,
   deleteAdmin,
+  login
 } = require("./controllers/Admin.js");
 
 const {
@@ -32,6 +33,7 @@ router.route("/getAdmin").get(getAdmin);
 router.route("/createAdmin").post(createAdmin);
 router.route("/updateAdmin/:id").post(updateAdmin);
 router.route("/deleteAdmin/:id").post(deleteAdmin);
+router.route("/login").post(login);
 
 router.route("/getBatch").get(getBatch);
 router.route("/addBatch").post(addBatch);

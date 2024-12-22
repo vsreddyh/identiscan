@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 
 const SearchPage = () => {
   const navigate = useNavigate();
+  const x = import.meta.env.VITE_SERVER;
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex justify-between items-center p-4 shadow-md">
