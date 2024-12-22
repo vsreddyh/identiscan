@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import axios from "axios";
 import {
   AcademicCapIcon,
   PlusIcon,
@@ -9,14 +11,25 @@ import {
 } from "@heroicons/react/24/solid";
 
 const ManageBatches = () => {
-  const [batches, setBatches] = useState(
-    Array.from({ length: 50 }, (_, i) => ({
-      id: i + 1,
-      name: `Batch ${2020 + i}`,
-      year: 2020 + i,
-      status: i < 3 ? "Active" : "Inactive",
-    })),
-  );
+  const navigate = useNavigate();
+  const [batches, setBatches] = useState([]);
+  const [error, setError] = useState("");
+
+  const getBatch = () => {
+    axios
+      .get(`${import.meta.env.VITE_SERVER}/admin/getBatch`)
+      .then((response) => {
+        setBatches(response.data);
+      })
+      .catch((err) => {
+        setError("Failed to fetch batches. Please try again.");
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    getBatch();
+  }, []);
 
   const [visibleCount, setVisibleCount] = useState(10);
   const [modalMode, setModalMode] = useState(null);
@@ -25,28 +38,36 @@ const ManageBatches = () => {
     batchName: "",
     year: "",
   });
+  const [formError, setFormError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormError(""); // Clear error when user starts typing
   };
 
   const handleAddBatch = () => {
-    // Validate inputs
+    setFormError("");
+
     if (!formData.batchName || !formData.year) {
-      alert("Please fill in all fields.");
-      return;
+      setFormError("Please fill in all fields");
     }
 
     const newBatch = {
-      id: batches.length + 1,
-      name: formData.batchName,
-      year: parseInt(formData.year),
-      status: "Active",
+      batch: formData.batchName,
+      year: formData.year,
     };
+    axios
+      .post(`${import.meta.env.VITE_SERVER}/admin/addBatch`, newBatch)
+      .then((response) => {
+        setBatches(response.data);
+      })
+      .catch((err) => {
+        setError("Failed to fetch batches. Please try again.");
+        console.log(err);
+      });
 
-    setBatches([...batches, newBatch]);
     setModalMode(null);
     setFormData({
       batchName: "",
@@ -55,33 +76,51 @@ const ManageBatches = () => {
   };
 
   const handleDeleteBatch = () => {
-    setBatches((prevBatches) =>
-      prevBatches.filter((batch) => batch.id !== selectedBatch.id),
-    );
+    axios
+      .post(
+        `${import.meta.env.VITE_SERVER}/admin/deleteBatch/${selectedBatch.id}`,
+      )
+      .then((response) => {
+        setBatches(response.data);
+      })
+      .catch((err) => {
+        setError("Failed to fetch batches. Please try again.");
+        console.log(err);
+      });
+
     setModalMode(null);
     setSelectedBatch(null);
   };
 
   const handlePromoteBatch = () => {
-    setBatches((prevBatches) =>
-      prevBatches.map((batch) =>
-        batch.id === selectedBatch.id
-          ? { ...batch, status: "Promoted" }
-          : batch,
-      ),
-    );
+    axios
+      .post(
+        `${import.meta.env.VITE_SERVER}/admin/promoteBatch/${selectedBatch.id}`,
+      )
+      .then((response) => {
+        setBatches(response.data);
+      })
+      .catch((err) => {
+        setError(err.response.data);
+        console.log(err);
+      });
+
     setModalMode(null);
     setSelectedBatch(null);
   };
 
   const handleDeactivateBatch = () => {
-    setBatches((prevBatches) =>
-      prevBatches.map((batch) =>
-        batch.id === selectedBatch.id
-          ? { ...batch, status: "Inactive" }
-          : batch,
-      ),
-    );
+    axios
+      .post(
+        `${import.meta.env.VITE_SERVER}/admin/deactivateBatch/${selectedBatch.id}`,
+      )
+      .then((response) => {
+        setBatches(response.data);
+      })
+      .catch((err) => {
+        setError(err.response.data);
+        console.log(err);
+      });
     setModalMode(null);
     setSelectedBatch(null);
   };
@@ -126,7 +165,10 @@ const ManageBatches = () => {
               {currentConfig.title}
             </h2>
             <button
-              onClick={() => setModalMode(null)}
+              onClick={() => {
+                setModalMode(null);
+                setFormError("");
+              }}
               className="text-gray-500 hover:text-gray-700 transition"
             >
               <svg
@@ -145,6 +187,12 @@ const ManageBatches = () => {
               </svg>
             </button>
           </div>
+
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{formError}</p>
+            </div>
+          )}
 
           {modalMode === "add" && (
             <>
@@ -194,7 +242,10 @@ const ManageBatches = () => {
 
           <div className="flex justify-end space-x-3">
             <button
-              onClick={() => setModalMode(null)}
+              onClick={() => {
+                setModalMode(null);
+                setFormError("");
+              }}
               className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition"
             >
               Cancel
@@ -225,7 +276,7 @@ const ManageBatches = () => {
         <div className="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => alert("Navigating back")}
+              onClick={() => navigate("/dashboard")}
               className="hover:bg-indigo-700 p-2 rounded-lg transition"
             >
               <ArrowLeftIcon className="h-6 w-6" />
@@ -233,6 +284,12 @@ const ManageBatches = () => {
             <h1 className="text-2xl font-bold">Batch Management</h1>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border-b border-red-200">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
 
         <div className="p-6">
           <div className="mb-6 flex space-x-4">
@@ -255,72 +312,86 @@ const ManageBatches = () => {
           </div>
 
           <div className="bg-white rounded-lg border">
-            {filteredBatches.slice(0, visibleCount).map((batch) => (
-              <div
-                key={batch.id}
-                className={`flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition ${
-                  batch.status === "Active"
-                    ? "bg-green-50 border-green-100"
-                    : "bg-red-50 border-red-100"
-                }`}
-              >
-                <div className="flex items-center space-x-4">
-                  <AcademicCapIcon
-                    className={`h-10 w-10 ${
-                      batch.status === "Active"
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }`}
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-800">
-                      {batch.name}
-                    </div>
-                    <div
-                      className={`text-sm ${
+            {filteredBatches.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <AcademicCapIcon className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Batches Found
+                </h3>
+                <p className="text-gray-500">
+                  {searchTerm
+                    ? "No batches match your search criteria"
+                    : "Start by adding a new batch"}
+                </p>
+              </div>
+            ) : (
+              filteredBatches.slice(0, visibleCount).map((batch) => (
+                <div
+                  key={batch.id}
+                  className={`flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition ${
+                    batch.status === "Active"
+                      ? "bg-green-50 border-green-100"
+                      : "bg-red-50 border-red-100"
+                  }`}
+                >
+                  <div className="flex items-center space-x-4">
+                    <AcademicCapIcon
+                      className={`h-10 w-10 ${
                         batch.status === "Active"
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-green-500"
+                          : "text-red-500"
                       }`}
-                    >
-                      Year: {batch.year} | Status: {batch.status}
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-800">
+                        {batch.name}
+                      </div>
+                      <div
+                        className={`text-sm ${
+                          batch.status === "Active"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        Year: {batch.year} | Status: {batch.status}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        setSelectedBatch(batch);
+                        setModalMode("promote");
+                      }}
+                      className="text-green-500 hover:text-green-600 transition"
+                      title="Promote"
+                    >
+                      <ChevronDoubleUpIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedBatch(batch);
+                        setModalMode("deactivate");
+                      }}
+                      className="text-yellow-500 hover:text-yellow-600 transition"
+                      title="Deactivate"
+                    >
+                      <StopIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedBatch(batch);
+                        setModalMode("delete");
+                      }}
+                      className="text-red-500 hover:text-red-600 transition"
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => {
-                      setSelectedBatch(batch);
-                      setModalMode("promote");
-                    }}
-                    className="text-green-500 hover:text-green-600 transition"
-                    title="Promote"
-                  >
-                    <ChevronDoubleUpIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedBatch(batch);
-                      setModalMode("deactivate");
-                    }}
-                    className="text-yellow-500 hover:text-yellow-600 transition"
-                    title="Deactivate"
-                  >
-                    <StopIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedBatch(batch);
-                      setModalMode("delete");
-                    }}
-                    className="text-red-500 hover:text-red-600 transition"
-                    title="Delete"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {visibleCount < filteredBatches.length && (

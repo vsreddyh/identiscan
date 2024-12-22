@@ -11,12 +11,7 @@ import {
 
 const ManageAdmins = () => {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState(
-    Array.from({ length: 1 }, (_, i) => ({
-      id: i + 1,
-      username: `Admin ${i + 1}`,
-    })),
-  );
+  const [admins, setAdmins] = useState([]);
   const logout = () => {
     axios
       .post(`${import.meta.env.VITE_SERVER}/admin/logout`)
@@ -68,10 +63,8 @@ const ManageAdmins = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear errors when user starts typing
     setErrors((prev) => ({ ...prev, [name]: "" }));
 
-    // Validate passwords on change
     if (name.includes("Password")) {
       const newErrors = {};
       if (name === "password" || name === "newPassword") {
@@ -88,7 +81,6 @@ const ManageAdmins = () => {
           newErrors[name] = "Password must include a special character";
       }
 
-      // Check password confirmation match
       const confirmField =
         name === "password" ? "confirmPassword" : "confirmNewPassword";
       const confirmValue = formData[confirmField];
@@ -205,7 +197,6 @@ const ManageAdmins = () => {
         console.log(error);
       });
 
-    // Update password logic here
     setModalMode(null);
     setSelectedAdmin(null);
     setFormData({
@@ -409,7 +400,6 @@ const ManageAdmins = () => {
     );
   };
 
-  // Rest of the component remains the same...
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -444,9 +434,21 @@ const ManageAdmins = () => {
             </button>
           </div>
 
-          {admins.length != 0 ? (
-            <div className="bg-white rounded-lg border">
-              {admins.slice(0, visibleCount).map((admin) => (
+          <div className="bg-white rounded-lg border">
+            {admins.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <UserCircleIcon className="h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Admins Found
+                </h3>
+                <p className="text-gray-500">
+                  {searchTerm
+                    ? "No administrators match your search criteria"
+                    : "Start by adding a new administrator"}
+                </p>
+              </div>
+            ) : (
+              admins.slice(0, visibleCount).map((admin) => (
                 <div
                   key={admin.id}
                   className="flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition"
@@ -466,6 +468,7 @@ const ManageAdmins = () => {
                         setModalMode("changePassword");
                       }}
                       className="text-yellow-500 hover:text-yellow-600 transition"
+                      title="Change Password"
                     >
                       <PencilIcon className="h-5 w-5" />
                     </button>
@@ -475,16 +478,15 @@ const ManageAdmins = () => {
                         setModalMode("delete");
                       }}
                       className="text-red-500 hover:text-red-600 transition"
+                      title="Delete Admin"
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p>No admins found</p>
-          )}
+              ))
+            )}
+          </div>
 
           {visibleCount < admins.length && (
             <div className="text-center mt-6">

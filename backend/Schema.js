@@ -51,6 +51,7 @@ const dateSchema = new mongoose.Schema(
   {
     date: Date,
     batch: ObjectId,
+    year: Number,
   },
   { versionKey: false },
 );
@@ -59,7 +60,7 @@ const batchSchema = new mongoose.Schema(
   {
     batch: String,
     year: Number,
-    active: Boolean,
+    status: Boolean,
   },
   { versionKey: false },
 );
