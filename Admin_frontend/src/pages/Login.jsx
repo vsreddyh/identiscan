@@ -32,14 +32,22 @@ const Login = () => {
       password: password,
     };
     const response = await axios.post(
-      `${import.meta.env.VITE_SERVER}/login`,
+      `${import.meta.env.VITE_SERVER}/admin/login`,
       data,
     );
-    console.log(username, password);
-    if (response.body.admin) {
-      navigate("/Dashboard");
+    console.log(response);
+    if (
+      response.data.message == "Login successful" &&
+      response.data.admin.master
+    ) {
+      navigate("/manageAdmin");
+    } else if (
+      response.data.message == "Login successful" &&
+      !response.data.admin.master
+    ) {
+      navigate("/dashboard");
     } else {
-      setMessage(request.body.message);
+      setMessage(response.data.message);
     }
   };
   return (
@@ -71,7 +79,7 @@ const Login = () => {
           Submit
         </button>
       </form>
-      <p>{message}</p>
+      <p className="text-red-500">{message}</p>
     </div>
   );
 };

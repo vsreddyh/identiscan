@@ -1,8 +1,8 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 const { admins } = require("../Schema.js");
 
 const getAdmin = async (req, res) => {
-  const model = await admins.find({},{username:1,_id:1});
+  const model = await admins.find({}, { username: 1, _id: 1 });
   res.status(200).json(model);
 };
 
@@ -12,7 +12,7 @@ const createAdmin = async (req, res) => {
       message: "username and password are required to create an admin",
     });
   }
-  const  hash = bcrypt.hash(req.body.password, 10)
+  const hash = bcrypt.hash(req.body.password, 10);
   try {
     await admins.create({
       username: req.body.username,
@@ -20,10 +20,8 @@ const createAdmin = async (req, res) => {
       master: false,
     });
 
-   
     const adminList = await admins.find({}, { username: 1, _id: 1 });
     res.status(200).json(adminList);
-
   } catch (error) {
     console.error("Error creating admin:", error);
     res.status(400).json({ message: "Failed to create the admin" });
@@ -32,7 +30,7 @@ const createAdmin = async (req, res) => {
 
 const updateAdmin = async (req, res) => {
   try {
-    const  hash = bcrypt.hash(req.body.password, 10)
+    const hash = bcrypt.hash(req.body.password, 10);
     const adminToUpdate = await admins.findById(req.params.id);
     if (!adminToUpdate) {
       return res.status(404).send("unable to find admin by given id");
@@ -67,7 +65,7 @@ const deleteAdmin = async (req, res) => {
     const adminList = await admins.find({}, { username: 1, _id: 1 });
 
     res.status(200).json({
-    //  message: `Admin with id ${id} and username ${adminToDelete.username} deleted successfully`,
+      //  message: `Admin with id ${id} and username ${adminToDelete.username} deleted successfully`,
       admins: adminList,
     });
   } catch (error) {
@@ -76,21 +74,20 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
-const login = async (req, res) =>{
-  try{
-    const {username,password} = req.body;
-    const admin = await admins.findOne({username:username});
-    if(!admin){
-      return res.status(404).json({message:"admin not found"});
+const login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const admin = await admins.findOne({ username: username });
+    if (!admin) {
+      return res.status(200).json({ message: "Username not found" });
     }
-    const isMatch = await bcrypt.compare(password,admin.password);
-    if(!isMatch){
-      return res.status(400).json({message:"invalid password"});
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(200).json({ message: "Wrong password" });
     }
-    res.status(200).json({message:"login successful",admin:admin});
-  }
-  catch(err){
-    res.status(400).json({message:"unable to login"})
+    res.status(200).json({ message: "Login successful", admin: admin });
+  } catch (err) {
+    res.status(200).json({ message: "Unable to login. Contact Tech Support" });
   }
 };
 
