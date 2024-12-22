@@ -31,24 +31,19 @@ const Login = () => {
       username: username,
       password: password,
     };
-    const response = await axios.post(
-      `${import.meta.env.VITE_SERVER}/admin/login`,
-      data,
-    );
-    console.log(response);
-    if (
-      response.data.message == "Login successful" &&
-      response.data.admin.master
-    ) {
-      navigate("/manageAdmin");
-    } else if (
-      response.data.message == "Login successful" &&
-      !response.data.admin.master
-    ) {
-      navigate("/dashboard");
-    } else {
-      setMessage(response.data.message);
-    }
+    axios
+      .post(`${import.meta.env.VITE_SERVER}/admin/login`, data)
+      .then((response) => {
+        console.log(response);
+        if (response.data.admin.master) {
+          navigate("/manageAdmin");
+        } else {
+          navigate("/dashboard");
+        }
+      })
+      .catch((error) => {
+        setMessage(error.response.data);
+      });
   };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">

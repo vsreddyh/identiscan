@@ -5,7 +5,8 @@ const {
   createAdmin,
   updateAdmin,
   deleteAdmin,
-  login
+  login,
+  logout,
 } = require("./controllers/Admin.js");
 
 const {
@@ -13,27 +14,29 @@ const {
   addBatch,
   deleteBatch,
   deactivateBatch,
-  promoteBatch
-}=require("./controllers/Batches.js");
+  promoteBatch,
+} = require("./controllers/Batches.js");
 
-const { 
+const {
   getClass,
   addClass,
   deleteClass,
-  activateToday
+  activateToday,
 } = require("./controllers/Classes.js");
 
 const {
   getStudents,
   addStudent,
   // getStudentInfo
-}=require("./controllers/Students.js")
+} = require("./controllers/Students.js");
 
-router.route("/getAdmin").get(getAdmin);
+router.route("/getAdmins").get(getAdmin);
+router.route("/getAdmins/:username").get(getAdmin);
 router.route("/createAdmin").post(createAdmin);
 router.route("/updateAdmin/:id").post(updateAdmin);
 router.route("/deleteAdmin/:id").post(deleteAdmin);
 router.route("/login").post(login);
+router.route("/logout").post(logout);
 
 router.route("/getBatch").get(getBatch);
 router.route("/addBatch").post(addBatch);
