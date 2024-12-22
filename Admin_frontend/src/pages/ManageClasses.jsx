@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router";
 import {
   BookOpenIcon,
   PlusIcon,
@@ -7,65 +9,83 @@ import {
 } from "@heroicons/react/24/solid";
 
 const ManageClasses = () => {
-  // Sample batches and classes data
-  const [batches, setBatches] = useState(
-    Array.from({ length: 5 }, (_, i) => ({
-      id: i + 1,
-      name: `Batch ${2020 + i}`,
-      year: 2020 + i,
-      status: "Active",
-    })),
-  );
-
-  const [classes, setClasses] = useState(
-    Array.from({ length: 50 }, (_, i) => ({
-      id: i + 1,
-      name: `Class ${i + 1}`,
-      batchId: (i % 5) + 1,
-      section: String.fromCharCode(65 + (i % 3)), // A, B, C sections
-      strength: Math.floor(Math.random() * 30) + 20, // Random student count
-    })),
-  );
-
+  const [batches, setBatches] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [modalMode, setModalMode] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [newClassName, setNewClassName] = useState("");
-  const [newClassSection, setNewClassSection] = useState("");
 
-  // Filter classes based on selected batch
-  const filteredClasses = useMemo(() => {
-    return selectedBatch
-      ? classes.filter((cls) => cls.batchId === selectedBatch.id)
-      : [];
-  }, [selectedBatch, classes]);
+  const navigate = useNavigate();
+
+  const getBatch = () => {
+    axios
+      .get(`${import.meta.env.VITE_SERVER}/admin/getActiveBatch`)
+      .then((response) => {
+        setBatches(response.data);
+        console.log(response.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    getBatch();
+  }, []);
+
+  const getClasses = () => {
+    axios
+      .get(`${import.meta.env.VITE_SERVER}/admin/getClass/${selectedBatch.id}`)
+      .then((response) => {
+        setClasses(response.data);
+        console.log(response.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  useEffect(() => {
+    if (selectedBatch) {
+      getClasses();
+    }
+  }, [selectedBatch]);
 
   const handleAddClass = () => {
-    // Validate inputs
-    if (!newClassName || !newClassSection || !selectedBatch) {
+    if (!newClassName || !selectedBatch) {
       alert("Please fill in all fields and select a batch.");
       return;
     }
 
     const newClass = {
-      id: classes.length + 1,
-      name: newClassName,
+      className: newClassName,
       batchId: selectedBatch.id,
-      section: newClassSection,
-      strength: Math.floor(Math.random() * 30) + 20,
     };
 
-    setClasses([...classes, newClass]);
+    axios
+      .post(`${import.meta.env.VITE_SERVER}/admin/addClass`, newClass)
+      .then((response) => {
+        setClasses(response.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
     setModalMode(null);
     setNewClassName("");
-    setNewClassSection("");
   };
 
   const handleDeleteClass = () => {
-    setClasses((prevClasses) =>
-      prevClasses.filter((cls) => cls.id !== selectedClass.id),
-    );
+    axios
+      .post(
+        `${import.meta.env.VITE_SERVER}/admin/deleteClass/${selectedClass.id}`,
+      )
+      .then((response) => {
+        setClasses(response.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
     setModalMode(null);
     setSelectedClass(null);
   };
@@ -117,40 +137,20 @@ const ManageClasses = () => {
           </div>
 
           {modalMode === "add" && (
-            <>
-              <div>
+            <div>
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  Selected Batch: {selectedBatch ? selectedBatch.name : "None"}
+                  Class Name
                 </label>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Class Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newClassName}
-                    onChange={(e) => setNewClassName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                    placeholder="Enter class name"
-                  />
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Section
-                  </label>
-                  <select
-                    value={newClassSection}
-                    onChange={(e) => setNewClassSection(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                  >
-                    <option value="">Select Section</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  placeholder="Enter class name"
+                />
               </div>
-            </>
+            </div>
           )}
 
           {modalMode === "delete" && (
@@ -191,7 +191,7 @@ const ManageClasses = () => {
         <div className="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => alert("Navigating back")}
+              onClick={() => navigate("/dashboard")}
               className="hover:bg-indigo-700 p-2 rounded-lg transition"
             >
               <ArrowLeftIcon className="h-6 w-6" />
@@ -209,20 +209,24 @@ const ManageClasses = () => {
               <select
                 value={selectedBatch ? selectedBatch.id : ""}
                 onChange={(e) => {
-                  const batch = batches.find(
-                    (b) => b.id === parseInt(e.target.value),
-                  );
+                  const batch = batches.find((b) => b.id == e.target.value);
                   setSelectedBatch(batch);
                   setVisibleCount(10);
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Select a Batch</option>
-                {batches.map((batch) => (
-                  <option key={batch.id} value={batch.id}>
-                    {batch.name}
+                {batches.length === 0 ? (
+                  <option value="" disabled>
+                    No batches found
                   </option>
-                ))}
+                ) : (
+                  batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             {selectedBatch && (
@@ -237,41 +241,47 @@ const ManageClasses = () => {
           </div>
 
           {selectedBatch ? (
-            <div className="bg-white rounded-lg border">
-              {filteredClasses.slice(0, visibleCount).map((cls) => (
-                <div
-                  key={cls.id}
-                  className="flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center space-x-4">
-                    <BookOpenIcon className="h-10 w-10 text-indigo-500" />
+            classes.length > 0 ? (
+              <div className="bg-white rounded-lg border">
+                {classes.slice(0, visibleCount).map((cls) => (
+                  <div
+                    key={cls.id}
+                    className="flex items-center justify-between px-6 py-4 border-b hover:bg-gray-50 transition"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <BookOpenIcon className="h-10 w-10 text-indigo-500" />
 
-                    <div className="font-semibold text-gray-800">
-                      {cls.name}
+                      <div className="font-semibold text-gray-800">
+                        {cls.name}
+                      </div>
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setSelectedClass(cls);
+                          setModalMode("delete");
+                        }}
+                        className="text-red-500 hover:text-red-600 transition"
+                        title="Delete"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => {
-                        setSelectedClass(cls);
-                        setModalMode("delete");
-                      }}
-                      className="text-red-500 hover:text-red-600 transition"
-                      title="Delete"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-10">
+                No classes found for the selected batch
+              </div>
+            )
           ) : (
             <div className="text-center text-gray-500 py-10">
               Please select a batch to view classes
             </div>
           )}
 
-          {selectedBatch && visibleCount < filteredClasses.length && (
+          {selectedBatch && visibleCount < classes.length && (
             <div className="text-center mt-6">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 10)}

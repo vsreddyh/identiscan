@@ -11,6 +11,7 @@ const {
 
 const {
   getBatch,
+  getActiveBatch,
   addBatch,
   deleteBatch,
   deactivateBatch,
@@ -39,6 +40,8 @@ router.route("/login").post(login);
 router.route("/logout").post(logout);
 
 router.route("/getBatch").get(getBatch);
+router.route("/getActiveBatch").get(getActiveBatch);
+router.route("/getBatch/:batch").get(getBatch);
 router.route("/addBatch").post(addBatch);
 router.route("/deleteBatch/:id").post(deleteBatch);
 router.route("/deactivateBatch/:id").post(deactivateBatch);
@@ -46,7 +49,7 @@ router.route("/promoteBatch/:id").post(promoteBatch);
 
 router.route("/getClass/:id").get(getClass);
 router.route("/addClass").post(addClass);
-router.route("/deleteClass/:id").get(deleteClass);
+router.route("/deleteClass/:id").post(deleteClass);
 router.route("/activateToday").post(activateToday);
 
 router.route("/getStudents").post(getStudents);

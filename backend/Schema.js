@@ -52,6 +52,7 @@ const dateSchema = new mongoose.Schema(
     date: Date,
     batch: ObjectId,
     year: Number,
+    class: ObjectId,
   },
   { versionKey: false },
 );

@@ -2,11 +2,37 @@ const { Batches, students } = require("../Schema.js");
 
 const getBatch = async (req, res) => {
   try {
+    const search = req.params.batch || "";
+    const filter = search ? { batch: { $regex: search, $options: "i" } } : {};
+
     // Fetch current year
     const currentYear = new Date().getFullYear();
 
     // Fetch all batches from the database
-    const allBatches = await Batches.find({});
+    const allBatches = await Batches.find(filter);
+
+    // Map batches to include their status
+    const response = allBatches.map((b) => ({
+      id: b._id,
+      name: b.batch,
+      year: b.year,
+      status: b.status ? "Active" : "Inactive",
+    }));
+
+    // Respond with the array of batches and current year
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error fetching batches:", error);
+    res.status(500).json({
+      message: "Failed to retrieve batches",
+    });
+  }
+};
+
+const getActiveBatch = async (req, res) => {
+  try {
+    // Fetch all batches from the database
+    const allBatches = await Batches.find({ status: true });
 
     // Map batches to include their status
     const response = allBatches.map((b) => ({
@@ -158,4 +184,5 @@ module.exports = {
   deleteBatch,
   deactivateBatch,
   promoteBatch,
+  getActiveBatch,
 };
