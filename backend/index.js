@@ -6,11 +6,12 @@ const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const { url } = dotenv.config();
+const fileUpload = require("express-fileupload");
 // Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+app.use(fileUpload());
 // MongoDB Connection
 mongoose
   .connect(process.env.url)
@@ -24,7 +25,7 @@ const store = new MongoDBStore({
 });
 
 store.on("error", (error) => {
- console.error("Session store error:", error);
+  console.error("Session store error:", error);
 });
 
 // Middleware

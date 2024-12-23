@@ -28,7 +28,7 @@ const {
 const {
   getStudents,
   addStudent,
-  // getStudentInfo
+  getStudentPhoto,
 } = require("./controllers/Students.js");
 
 router.route("/getAdmins").get(getAdmin);
@@ -52,8 +52,9 @@ router.route("/addClass").post(addClass);
 router.route("/deleteClass/:id").post(deleteClass);
 router.route("/activateToday").post(activateToday);
 
-router.route("/getStudents").post(getStudents);
+router.route("/getStudents").get(getStudents);
 router.route("/addStudent").post(addStudent);
+router.get("/students/photo/:photoId", getStudentPhoto);
 // router.route("/").get(getStudentInfo);
 
 module.exports = router;

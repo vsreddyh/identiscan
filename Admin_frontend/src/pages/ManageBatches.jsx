@@ -16,6 +16,7 @@ const ManageBatches = () => {
   const [error, setError] = useState("");
 
   const getBatch = (batch) => {
+    batch = batch || "";
     axios
       .get(`${import.meta.env.VITE_SERVER}/admin/getBatch/${batch}`)
       .then((response) => {

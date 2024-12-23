@@ -1,4 +1,4 @@
-const { classes, Batches } = require("../Schema.js");
+const { classes, Batches, activeDates } = require("../Schema.js");
 
 const getClass = async (req, res) => {
   try {
@@ -104,35 +104,65 @@ const deleteClass = async (req, res) => {
 
 const activateToday = async (req, res) => {
   try {
-    const { classIds, batchIds } = req.body;
+    const { classId, batchId } = req.body;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize the date to midnight
 
-    // Validate that both classIds and batchIds are provided
-    if (!Array.isArray(classIds) || !Array.isArray(batchIds)) {
-      return res
-        .status(400)
-        .json({ message: "classIds and batchIds should be arrays." });
+    const newActiveDates = [];
+
+    if (!batchId) {
+      // Case: Add all batches and classes to activeDates
+      const batches = await Batches.find();
+
+      batches.forEach((batch) => {
+        batch.classes.forEach((cls) => {
+          newActiveDates.push({
+            date: today,
+            batch: batch._id,
+            year: batch.year,
+            class: cls._id,
+          });
+        });
+      });
+    } else if (!classId) {
+      // Case: Add all classes of the given batch to activeDates
+      const batch = await Batches.findById(batchId);
+      if (!batch) {
+        throw new Error("Batch not found");
+      }
+
+      batch.classes.forEach((cls) => {
+        newActiveDates.push({
+          date: today,
+          batch: batch._id,
+          year: batch.year,
+          class: cls._id,
+        });
+      });
+    } else {
+      // Case: Add the specific class and batch to activeDates
+      const batch = await Batches.findById(batchId);
+      if (!batch) {
+        throw new Error("Batch not found");
+      }
+
+      newActiveDates.push({
+        date: today,
+        batch: batch._id,
+        year: batch.year,
+        class: classId,
+      });
     }
 
-    // Update classes to mark them as 'today' (active) if class_id is in classIds and batch_id is in batchIds
-    const updatedClasses = await classes.updateMany(
-      {
-        _id: { $in: classIds },
-        batch: { $in: batchIds },
-      },
-      { $set: { status: "today" } },
-    );
+    // Insert the new active dates into the database
+    await activeDates.insertMany(newActiveDates);
 
-    // Check if any classes were updated
-    if (updatedClasses.modifiedCount === 0) {
-      return res.status(400).json({ message: "No classes were activated." });
-    }
-
-    // Return success status
-    res.status(200).json({ status: 1 });
+    res
+      .status(200)
+      .json({ success: true, message: "Active dates updated successfully." });
   } catch (error) {
-    // Handle errors
     console.error(error);
-    res.status(500).json({ message: "Unable to activate classes today." });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
