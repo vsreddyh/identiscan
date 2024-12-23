@@ -15,7 +15,7 @@ function App() {
       <Route path="/manageBatches" element={<ManageBatches />} />
       <Route path="/manageClasses" element={<ManageClasses />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/student" element={<StudentPage />} />
+      <Route path="/student/:id" element={<StudentPage />} />
     </Routes>
   );
 }

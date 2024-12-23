@@ -293,7 +293,12 @@ const Dashboard = () => {
               <span className="text-gray-700">{row.name}</span>
               <span className="text-gray-500">{row.roll}</span>
               <span className="text-green-600">{row.percentage}</span>
-              <button className="bg-blue-500 text-white py-2 px-4 rounded-md shadow-md hover:bg-blue-600 transition">
+              <button
+                onClick={() => {
+                  navigate(`/student/${row.id}`);
+                }}
+                className="bg-blue-500 text-white py-2 px-4 rounded-md shadow-md hover:bg-blue-600 transition"
+              >
                 Show More
               </button>
             </div>

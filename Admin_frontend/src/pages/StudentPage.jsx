@@ -1,10 +1,13 @@
-import React from "react";
-import { ArrowLeft, UserCircle2, Award, Calendar, Trophy } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router";
+import { ArrowLeft, Award, Calendar, Trophy } from "lucide-react";
 
-const StudentPage = ({ onBack }) => {
+const StudentPage = () => {
   // Sample Student Data
-  const studentData = {
-    photoUrl: "Person.jpg",
+  const { id } = useParams();
+  const [studentData, setStudentData] = useState({
+    photo: "Person.jpg",
     name: "Emma Rodriguez",
     rollNo: "ST-2024-0567",
     studentClass: "12th Science",
@@ -28,13 +31,27 @@ const StudentPage = ({ onBack }) => {
       true,
       true,
     ],
+  });
+  const navigate = useNavigate();
+  const getStudent = (id) => {
+    id = id || "";
+    axios
+      .get(
+        `${import.meta.env.VITE_SERVER}/admin/getStudentInfo/?studentId=${id}`,
+      )
+      .then((response) => {
+        setStudentData(response.data);
+      })
+      .catch((err) => console.log(err));
   };
-
+  useEffect(() => {
+    getStudent(id);
+  }, []);
   return (
     <div className="min-h-screen bg-slate-100 relative">
       {/* Back Button */}
       <button
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-sm 
         rounded-full p-2 shadow-md hover:bg-white transition-all 
         hover:shadow-lg group"
@@ -63,7 +80,7 @@ const StudentPage = ({ onBack }) => {
             shadow-xl overflow-hidden mb-4"
             >
               <img
-                src={studentData.photoUrl}
+                src={`${import.meta.env.VITE_SERVER}/admin/students/photo/${studentData.photo}`}
                 alt={`${studentData.name}'s profile`}
                 className="w-full h-full object-cover"
               />
@@ -73,7 +90,7 @@ const StudentPage = ({ onBack }) => {
             </h2>
             <div className="text-sm opacity-80 text-center mt-2 space-y-1">
               <p>Roll No: {studentData.rollNo}</p>
-              <p>Class: {studentData.studentClass}</p>
+              <p>Class: {studentData.StudentClass}</p>
               <p>Batch: {studentData.batch}</p>
             </div>
           </div>

@@ -93,6 +93,7 @@ const AddStudentModal = ({ isOpen, onClose, onAddStudent }) => {
       formData.append("classId", selectedClass.id);
       formData.append("rollNumber", studentData.rollNumber);
       formData.append("studentName", studentData.name);
+      formData.append("batchId", selectedBatch.id);
 
       const response = await axios.post(
         `${import.meta.env.VITE_SERVER}/admin/addStudent`,

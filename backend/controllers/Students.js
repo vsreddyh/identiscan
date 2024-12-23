@@ -1,4 +1,10 @@
-const { students } = require("../Schema.js");
+const {
+  students,
+  records,
+  activeDates,
+  Batches,
+  classes,
+} = require("../Schema.js");
 const mongoose = require("mongoose");
 const moment = require("moment"); // To handle date calculations, if needed for active days
 let bucket;
@@ -64,7 +70,7 @@ const getStudents = async (req, res) => {
 };
 
 const addStudent = async (req, res) => {
-  const { classId, rollNumber, studentName } = req.body;
+  const { classId, batchId, rollNumber, studentName } = req.body;
 
   if (!classId || !rollNumber || !studentName) {
     return res.status(400).json({
@@ -103,6 +109,7 @@ const addStudent = async (req, res) => {
     // Create new student with the file ID
     const newStudent = new students({
       class: classId,
+      batch: batchId,
       rollNumber,
       studentName,
       photo: uploadedFileId,
@@ -163,67 +170,92 @@ const getStudentPhoto = async (req, res) => {
 };
 
 const getStudentInfo = async (req, res) => {
-  const { rollNumber, studentId } = req.query; // Get the rollNumber or studentId from query parameters
+  const { rollNumber, studentId } = req.query;
 
-  // Validate that either rollNumber or studentId is provided
   if (!rollNumber && !studentId) {
     return res.status(400).json({
-      message: "Either rollNumber or studentId must be provided",
+      message: "Either RollNumber or StudentId must be provided",
     });
   }
 
   try {
-    // Find student based on either rollNumber or studentId
+    // Find student and populate class and batch
     let student;
     if (rollNumber) {
-      student = await Student.findOne({ rollNumber }).populate("class batch");
+      student = await students.findOne({ rollNumber });
     } else if (studentId) {
-      student = await Student.findById(studentId).populate("class batch");
+      student = await students.findOne({
+        _id: new mongoose.Types.ObjectId(studentId),
+      });
     }
-
+    console.log(student, studentId);
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Calculate total days (for example, based on the current date and attendance records)
-    const totalDays = 180; // Assuming 180 days in a semester, replace with actual logic
-
-    // Calculate the last 14 days active status (could depend on attendance or activity logs)
-    const last14ActiveDays = []; // Assume we fetch activity logs or attendance records to determine this
-
-    // Example of populating last14ActiveDays based on attendance records (you should adapt this logic)
-    const attendanceRecords = await Attendance.find({
-      student: student._id,
-      date: { $gte: moment().subtract(14, "days").toDate() },
+    // Get batch info
+    const batchOfStudent = await Batches.findOne({ _id: student.batch });
+    console.log(batchOfStudent);
+    const classOfStudent = await classes.findOne({ _id: student.class });
+    // Get total active days for the batch
+    const totalDays = await activeDates.countDocuments({
+      batch: student.batch,
+      year: batchOfStudent.year,
     });
 
-    // Iterate through the attendance records to get the active status for the last 14 days
-    attendanceRecords.forEach((record) => {
-      if (
-        moment(record.date).isBetween(moment().subtract(14, "days"), moment())
-      ) {
-        last14ActiveDays.push(record.isPresent); // Assuming `isPresent` is a boolean
-      }
+    // Get the latest 14 active dates for the batch
+    const last14ActiveDays = await activeDates
+      .find({
+        batch: student.batch,
+        year: batchOfStudent.year,
+      })
+      .sort({ date: -1 }) // Sort by date in descending order
+      .limit(14) // Get only the latest 14 records
+      .lean(); // Convert to plain JavaScript objects
+
+    // Get student's attendance records
+    const attendanceRecords = await records
+      .find({
+        student: student._id,
+        batch: student.batch,
+      })
+      .lean();
+
+    // Create attendance array with presence status for each active day
+    const attendanceStatus = last14ActiveDays.map((activeDay) => {
+      // Find if student has a record for this active day
+      const record = attendanceRecords.find((record) =>
+        moment(record.date).isSame(activeDay.date, "day"),
+      );
+
+      return;
+      isPresent: !!record;
     });
+
+    // Sort by date in ascending order for consistent display
 
     // Return the student info
     res.status(200).json({
-      studentName: student.studentName,
-      class: student.class ? student.class.className : "N/A", // Assuming the class has a className field
-      batch: student.batch ? student.batch.batch : "N/A", // Assuming the batch has a batch field
-      rollNumber: student.rollNumber,
+      id: student.id,
+      photo: student.photo,
+      name: student.studentName,
+      StudentClass: classOfStudent.className,
+      batch: batchOfStudent.batch,
+      rollNo: student.rollNumber,
       percentage: student.percentage,
-      noOfPresentDays: student.noOfPresentDays,
+      presentDays: student.noOfPresentDays,
       totalDays: totalDays,
-      last14ActiveDays: last14ActiveDays,
+      attendanceHistory: attendanceStatus,
     });
   } catch (error) {
+    console.error("Error in getStudentInfo:", error);
     res.status(500).json({
       message: "Error fetching student info",
       error: error.message,
     });
   }
 };
+
 module.exports = {
   getStudents,
   addStudent,
