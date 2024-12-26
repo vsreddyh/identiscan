@@ -1,42 +1,171 @@
-#root {
-  max-width: 1280px;
+/* General styles */
+.keyboard-container {
+  background-color: rgb(249, 250, 251);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  max-width: 500px;
   margin: 0 auto;
-  padding: 2rem;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.key-button {
+  background-color: white;
+  border: 1px solid rgb(229, 231, 235);
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.delete-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.delete-button {
+  width: 5rem;
+  height: 2.5rem;
+  background-color: rgb(254, 226, 226);
+  border: 1px solid rgb(229, 231, 235);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Main container styles */
+.main-container {
+  width: 100%;
+  max-width: 500px;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  background-color: rgb(254, 226, 226);
+  color: rgb(185, 28, 28);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.input-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.roll-number-input {
+  width: 90%;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  border: 1px solid rgb(229, 231, 235);
+  border-radius: 0.25rem;
+}
+
+.verify-button {
+  width: 90%;
+  max-width: 500px;
+  padding: 0.75rem;
+  color: white;
+  border-radius: 0.25rem;
+  margin-top: 1rem;
+}
+
+.verify-button:enabled {
+  background-color: rgb(59, 130, 246);
+  cursor: pointer;
+}
+
+.verify-button:disabled {
+  background-color: rgb(156, 163, 175);
+  cursor: not-allowed;
+}
+
+/* Camera view styles */
+.camera-container {
+  width: 100%;
+}
+
+.camera-video {
+  width: 100%;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.capture-button {
+  background-color: rgb(59, 130, 246);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.cancel-button {
+  background-color: rgb(107, 114, 128);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.countdown {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* Preview styles */
+.preview-image {
+  width: 100%;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.success-message {
+  background-color: rgb(220, 252, 231);
+  color: rgb(21, 128, 61);
+  padding: 1rem;
+  border-radius: 0.25rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.hidden {
+  display: none;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import "./App.css";
 
 const VirtualKeyboard = ({ onKeyPress, onDelete }) => {
   const [keyWidth, setKeyWidth] = useState(32);
@@ -18,76 +19,29 @@ const VirtualKeyboard = ({ onKeyPress, onDelete }) => {
 
   const keyboardLayout = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["z", "x", "c", "v", "b", "n", "m"],
+    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+    ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+    ["Z", "X", "C", "V", "B", "N", "M"],
   ];
 
-  const containerStyle = {
-    backgroundColor: "#f9fafb",
-    borderRadius: "8px",
-    padding: "8px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    width: "100%",
-    maxWidth: "500px",
-    margin: "0 auto",
-  };
-
-  const rowStyle = {
-    display: "flex",
-    justifyContent: "center",
-    gap: "4px",
-  };
-
-  const getKeyButtonStyle = (width) => ({
-    width: `${width}px`,
-    height: `${width * 1.25}px`,
-    backgroundColor: "white",
-    border: "1px solid #e5e7eb",
-    borderRadius: "4px",
-    fontSize: "0.875rem",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  });
-
-  const deleteButtonStyle = {
-    width: "80px",
-    height: "40px",
-    backgroundColor: "#fee2e2",
-    border: "1px solid #e5e7eb",
-    borderRadius: "4px",
-    fontSize: "0.875rem",
-    marginTop: "8px",
-    cursor: "pointer",
-  };
-
   return (
-    <div style={containerStyle}>
+    <div className="keyboard-container">
       {keyboardLayout.map((row, rowIndex) => (
-        <div key={rowIndex} style={rowStyle}>
+        <div key={rowIndex} className="keyboard-row">
           {row.map((key) => (
             <button
               key={key}
               onClick={() => onKeyPress(key)}
-              style={getKeyButtonStyle(keyWidth)}
+              className="key-button"
+              style={{ width: `${keyWidth}px`, height: `${keyWidth * 1.25}px` }}
             >
               {key}
             </button>
           ))}
         </div>
       ))}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginTop: "8px",
-        }}
-      >
-        <button onClick={onDelete} style={deleteButtonStyle}>
+      <div className="delete-button-container">
+        <button onClick={onDelete} className="delete-button">
           Delete
         </button>
       </div>
@@ -99,216 +53,272 @@ const App = () => {
   const [rollNumber, setRollNumber] = useState("");
   const [capturedImage, setCapturedImage] = useState(null);
   const [cameraError, setCameraError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [step, setStep] = useState("enter-roll"); // Steps: enter-roll, camera, preview, success
+  const [stream, setStream] = useState(null);
+  const [countdown, setCountdown] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const timeoutRef = useRef(null);
 
-  const containerStyle = {
-    width: "100%",
-    maxWidth: "500px",
-    height: "100vh",
-    margin: "0 auto",
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    overflow: "hidden",
+  // Handle physical keyboard input
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (step !== "enter-roll") return;
+
+      if (/^[0-9a-zA-Z]$/.test(e.key)) {
+        handleKeyPress(e.key.toUpperCase());
+      } else if (e.key === "Backspace") {
+        handleDeleteKey();
+      } else if (e.key === "Enter") {
+        verifyRollNumber();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [step, rollNumber]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage("");
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [stream]);
+
+  const startCountdown = (seconds, onComplete) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    setCountdown(seconds);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onComplete();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 3000);
+    return timer;
   };
-
-  const contentStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    width: "100%",
-  };
-
-  const headingStyle = {
-    fontSize: "1.5rem",
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: "16px",
-  };
-
-  const inputContainerStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: "16px",
-    width: "100%",
-  };
-
-  const inputLabelStyle = {
-    display: "block",
-    fontSize: "0.875rem",
-    fontWeight: 500,
-    marginBottom: "8px",
-    textAlign: "center",
-  };
-
-  const inputStyle = {
-    width: "90%",
-    padding: "8px",
-    textAlign: "center",
-    fontSize: "1.25rem",
-    letterSpacing: "0.025em",
-    border: "1px solid #e5e7eb",
-    borderRadius: "4px",
-  };
-
-  const buttonStyle = (isEnabled) => ({
-    width: "90%",
-    maxWidth: "500px",
-    padding: "10px",
-    backgroundColor: isEnabled ? "#3b82f6" : "#a1a1aa",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: isEnabled ? "pointer" : "not-allowed",
-    marginTop: "16px",
-  });
 
   const handleKeyPress = (key) => {
     setRollNumber((prev) => prev + key);
-  };
-
-  const handlePhysicalKeyboard = (e) => {
-    const key = e.key;
-    if (/^[a-zA-Z0-9]$/.test(key)) {
-      setRollNumber((prev) => prev + key.toLowerCase());
-    } else if (key === "Backspace") {
-      setRollNumber((prev) => prev.slice(0, -1));
-    }
   };
 
   const handleDeleteKey = () => {
     setRollNumber((prev) => prev.slice(0, -1));
   };
 
-  const startCameraAndCapture = async () => {
-    if (!rollNumber) return;
+  const verifyRollNumber = () => {
+    axios
+      .get(
+        `${import.meta.env.VITE_SERVER}/admin/checkRoll?rollNumber=${rollNumber}`,
+      )
+      .then(() => {
+        setStep("camera");
+        startCamera();
+      })
+      .catch((err) => {
+        setErrorMessage(err.response?.data?.error || "Verification failed");
+      });
+  };
 
+  const startCamera = async () => {
     try {
-      // Request camera access
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment",
           width: { ideal: 4096 },
           height: { ideal: 4096 },
         },
       });
-
-      // Set video source
+      setStream(mediaStream);
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-
-        // Wait for video to be ready
-        await new Promise((resolve) => {
-          videoRef.current.onloadedmetadata = resolve;
-        });
-
-        // Short delay to ensure camera is fully initialized
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Capture photo
-        capturePhoto(stream);
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+        };
       }
+      startCountdown(10, () => {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+        }
+        setStep("enter-roll");
+      });
     } catch (err) {
-      console.error("Error accessing camera:", err);
-      setCameraError("Could not access camera. Please check permissions.");
+      setErrorMessage("Could not access camera. Please check permissions.");
+      setStep("enter-roll");
     }
   };
 
-  const capturePhoto = (stream) => {
+  const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext("2d");
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
 
-      // Set canvas to match video dimensions
-      canvasRef.current.width = videoRef.current.videoWidth;
-      canvasRef.current.height = videoRef.current.videoHeight;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-      // Capture image
-      context.drawImage(videoRef.current, 0, 0);
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Convert to data URL
-      const imageDataUrl = canvasRef.current.toDataURL("image/jpeg");
-      setCapturedImage(imageDataUrl);
+      // Convert the canvas to a Blob instead of base64
+      canvas.toBlob(
+        (blob) => {
+          setCapturedImage(blob);
 
-      // Stop video stream
-      const tracks = stream.getTracks();
-      tracks.forEach((track) => track.stop());
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+          }
+          setStep("preview");
+          startCountdown(10, () => setStep("enter-roll"));
+        },
+        "image/jpeg",
+        0.8,
+      );
     }
+  };
+
+  const submitAttendance = () => {
+    // Clear any existing timeout before submitting
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    const formData = new FormData();
+    formData.append("rollNumber", rollNumber);
+    formData.append("image", capturedImage, `${rollNumber}_photo.jpg`);
+
+    axios
+      .post(
+        `${import.meta.env.VITE_SERVER}/admin/compareStudentPhoto`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      )
+      .then(() => {
+        setStep("success");
+        timeoutRef.current = setTimeout(() => {
+          setStep("enter-roll");
+          setCapturedImage(null);
+          setRollNumber("");
+        }, 3000);
+      })
+      .catch((err) => {
+        setErrorMessage(
+          err.response?.data?.error || "Failed to mark attendance",
+        );
+      });
   };
 
   return (
-    <div style={containerStyle} onKeyDown={handlePhysicalKeyboard} tabIndex={0}>
-      <div style={contentStyle}>
-        <h1 style={headingStyle}>Student Photo Capture</h1>
+    <div className="main-container">
+      <h1 className="title">Identiscan</h1>
 
-        <div style={inputContainerStyle}>
-          <label htmlFor="rollNumber" style={inputLabelStyle}>
-            Roll Number
-          </label>
-          <input
-            id="rollNumber"
-            type="text"
-            value={rollNumber}
-            readOnly
-            placeholder="Enter your roll number"
-            style={inputStyle}
-          />
-        </div>
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
 
-        {cameraError && (
-          <div
-            style={{
-              color: "red",
-              textAlign: "center",
-              marginBottom: "16px",
-            }}
-          >
-            {cameraError}
-          </div>
-        )}
-
-        {capturedImage && (
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "500px",
-              marginBottom: "16px",
-            }}
-          >
-            <img
-              src={capturedImage}
-              alt="Captured"
-              style={{
-                width: "100%",
-                borderRadius: "8px",
-              }}
-            />
-          </div>
-        )}
-
-        <video
-          ref={videoRef}
-          style={{ display: "none" }}
-          autoPlay
-          playsInline
-        />
-
-        <VirtualKeyboard
-          onKeyPress={handleKeyPress}
-          onDelete={handleDeleteKey}
+      <div className="input-container">
+        <input
+          type="text"
+          value={rollNumber}
+          readOnly
+          placeholder="Enter your roll number"
+          className="roll-number-input"
         />
       </div>
 
-      {!capturedImage && (
-        <button
-          onClick={startCameraAndCapture}
-          style={buttonStyle(!!rollNumber)}
-          disabled={!rollNumber}
-        >
-          Capture Photo
-        </button>
+      {step === "enter-roll" && (
+        <>
+          <VirtualKeyboard
+            onKeyPress={handleKeyPress}
+            onDelete={handleDeleteKey}
+          />
+          <button
+            onClick={verifyRollNumber}
+            disabled={!rollNumber}
+            className={`verify-button ${rollNumber ? "" : "verify-button-disabled"}`}
+          >
+            Verify
+          </button>
+        </>
+      )}
+
+      {step === "camera" && (
+        <div className="camera-container">
+          <video ref={videoRef} autoPlay playsInline className="camera-video" />
+          <div className="button-container">
+            <button onClick={capturePhoto} className="capture-button">
+              Capture Photo
+            </button>
+            <button
+              onClick={() => {
+                if (stream) {
+                  stream.getTracks().forEach((track) => track.stop());
+                }
+                setStep("enter-roll");
+              }}
+              className="cancel-button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === "preview" && capturedImage && (
+        <div className="preview-container">
+          <img
+            src={URL.createObjectURL(capturedImage)}
+            alt="Captured"
+            className="preview-image"
+            style={{ maxWidth: "100%", maxHeight: "60vh" }}
+          />
+          <div className="button-container">
+            <button onClick={submitAttendance} className="submit-button">
+              Submit
+            </button>
+            <button
+              onClick={() => {
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                  timeoutRef.current = null;
+                }
+                setCapturedImage(null);
+                setStep("enter-roll");
+              }}
+              className="cancel-button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === "success" && (
+        <div className="success-message">Attendance marked successfully!</div>
       )}
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
