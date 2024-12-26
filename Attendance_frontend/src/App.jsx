@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
 
 const VirtualKeyboard = ({ onKeyPress, onDelete }) => {
   const [keyWidth, setKeyWidth] = useState(32);
@@ -109,7 +110,7 @@ const App = () => {
     padding: "16px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    alignItems: "center",
     overflow: "hidden",
   };
 
@@ -128,6 +129,9 @@ const App = () => {
   };
 
   const inputContainerStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
     marginBottom: "16px",
     width: "100%",
   };
@@ -141,7 +145,7 @@ const App = () => {
   };
 
   const inputStyle = {
-    width: "100%",
+    width: "90%",
     padding: "8px",
     textAlign: "center",
     fontSize: "1.25rem",
@@ -151,7 +155,7 @@ const App = () => {
   };
 
   const buttonStyle = (isEnabled) => ({
-    width: "100%",
+    width: "90%",
     maxWidth: "500px",
     padding: "10px",
     backgroundColor: isEnabled ? "#3b82f6" : "#a1a1aa",

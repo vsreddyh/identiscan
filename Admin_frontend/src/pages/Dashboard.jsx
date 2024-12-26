@@ -107,17 +107,22 @@ const Dashboard = () => {
   }, [selectedBatch2]);
 
   const addDay = () => {
-    if (selectedBatch1 && selectedClass1) {
-      axios
-        .post(`${import.meta.env.VITE_SERVER}/admin/activateToday`, {
-          classId: selectedClass1.id,
-          batchId: selectedBatch1.id,
-        })
-        .then(() => alert("Added today"))
-        .catch((error) =>
-          console.error("Error activating day for class 1:", error),
-        );
+    const body = {
+      classId: null,
+      batchId: null,
+    };
+    if (selectedBatch1 != null) {
+      body.batchId = selectedBatch1.id;
     }
+    if (selectedClass1 != null) {
+      body.classId = selectedClass1.id;
+    }
+    axios
+      .post(`${import.meta.env.VITE_SERVER}/admin/activateToday`, body)
+      .then(() => alert("Added today"))
+      .catch((error) =>
+        console.error("Error activating day for class 1:", error),
+      );
   };
 
   const handleShowMore = () => {
@@ -167,9 +172,7 @@ const Dashboard = () => {
             }
             className="p-2 rounded-md border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500"
           >
-            <option value="" disabled>
-              Select Batch 1
-            </option>
+            <option value="">All Batches</option>
             {batches1.length > 0 ? (
               batches1.map((batch) => (
                 <option key={batch.id} value={batch.id}>
@@ -188,9 +191,7 @@ const Dashboard = () => {
             disabled={!selectedBatch1}
             className="p-2 rounded-md border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500"
           >
-            <option value="" disabled>
-              Select Class 1
-            </option>
+            <option value="">All Classes</option>
             {classes1.length > 0 ? (
               classes1.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -223,9 +224,7 @@ const Dashboard = () => {
             }
             className="p-2 rounded-md border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500"
           >
-            <option value="" disabled>
-              Select Batch 2
-            </option>
+            <option value="">All Batches</option>
             {batches2.length > 0 ? (
               batches2.map((batch) => (
                 <option key={batch.id} value={batch.id}>
@@ -244,9 +243,7 @@ const Dashboard = () => {
             disabled={!selectedBatch2}
             className="p-2 rounded-md border border-gray-300 shadow-md focus:ring-2 focus:ring-blue-500"
           >
-            <option value="" disabled>
-              Select Class 2
-            </option>
+            <option value="">All Classes</option>
             {classes2.length > 0 ? (
               classes2.map((cls) => (
                 <option key={cls.id} value={cls.id}>

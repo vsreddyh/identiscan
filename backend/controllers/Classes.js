@@ -107,22 +107,31 @@ const activateToday = async (req, res) => {
     const { classId, batchId } = req.body;
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize the date to midnight
-
-    const newActiveDates = [];
+    let newActiveDates = [];
 
     if (!batchId) {
       // Case: Add all batches and classes to activeDates
       const batches = await Batches.find();
-
-      batches.forEach((batch) => {
-        batch.classes.forEach((cls) => {
-          newActiveDates.push({
+      // Use Promise.all to wait for all async operations
+      await Promise.all(
+        batches.map(async (batch) => {
+          const loc = await classes.find({ batch: batch._id });
+          const batchActiveDates = loc.map((cls) => ({
             date: today,
             batch: batch._id,
             year: batch.year,
             class: cls._id,
-          });
-        });
+          }));
+          newActiveDates = newActiveDates.concat(batchActiveDates);
+        }),
+      );
+
+      // Delete all existing documents for today
+      await activeDates.deleteMany({
+        date: {
+          $gte: today,
+          $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        },
       });
     } else if (!classId) {
       // Case: Add all classes of the given batch to activeDates
@@ -130,14 +139,21 @@ const activateToday = async (req, res) => {
       if (!batch) {
         throw new Error("Batch not found");
       }
+      const loc = await classes.find({ batch: batch._id });
+      newActiveDates = loc.map((cls) => ({
+        date: today,
+        batch: batch._id,
+        year: batch.year,
+        class: cls._id,
+      }));
 
-      batch.classes.forEach((cls) => {
-        newActiveDates.push({
-          date: today,
-          batch: batch._id,
-          year: batch.year,
-          class: cls._id,
-        });
+      // Delete existing documents for this batch and date
+      await activeDates.deleteMany({
+        date: {
+          $gte: today,
+          $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        },
+        batch: batch._id,
       });
     } else {
       // Case: Add the specific class and batch to activeDates
@@ -145,21 +161,36 @@ const activateToday = async (req, res) => {
       if (!batch) {
         throw new Error("Batch not found");
       }
+      newActiveDates = [
+        {
+          date: today,
+          batch: batch._id,
+          year: batch.year,
+          class: classId,
+        },
+      ];
 
-      newActiveDates.push({
-        date: today,
+      // Delete existing document for this specific class, batch, and date
+      await activeDates.deleteMany({
+        date: {
+          $gte: today,
+          $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        },
         batch: batch._id,
-        year: batch.year,
         class: classId,
       });
     }
 
     // Insert the new active dates into the database
-    await activeDates.insertMany(newActiveDates);
+    if (newActiveDates.length > 0) {
+      await activeDates.insertMany(newActiveDates);
+    }
 
-    res
-      .status(200)
-      .json({ success: true, message: "Active dates updated successfully." });
+    res.status(200).json({
+      success: true,
+      message: "Active dates updated successfully.",
+      count: newActiveDates.length,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
