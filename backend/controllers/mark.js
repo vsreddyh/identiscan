@@ -1,6 +1,6 @@
 const { students, records, activeDates } = require("../Schema.js");
-const axios = require('axios');
-const mongoose = require('mongoose');
+const axios = require("axios");
+const mongoose = require("mongoose");
 mongoose.connection.once("open", () => {
   bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
     bucketName: "photos",
@@ -10,9 +10,11 @@ mongoose.connection.once("open", () => {
 const checkRoll = async (req, res) => {
   try {
     const { rollNumber } = req.query;
-
+    console.log(rollNumber);
     if (!rollNumber) {
-      return res.status(400).json({ error: "rollNumber is required in query." });
+      return res
+        .status(400)
+        .json({ error: "rollNumber is required in query." });
     }
 
     // Find the student with the given roll number
@@ -29,12 +31,13 @@ const checkRoll = async (req, res) => {
     const activeDate = await activeDates.findOne({
       date: today,
       batch: student.batch,
-      year: today.getFullYear(),
       class: student.class,
     });
 
     if (!activeDate) {
-      return res.status(404).json({ error: "No active date found for the student." });
+      return res
+        .status(404)
+        .json({ error: "No active date found for the student." });
     }
 
     // Return success if all checks pass
@@ -45,7 +48,6 @@ const checkRoll = async (req, res) => {
   }
 };
 
-
 const compareStudentPhoto = async (req, res) => {
   try {
     // Get the roll number and uploaded photo from request
@@ -54,77 +56,75 @@ const compareStudentPhoto = async (req, res) => {
 
     if (!rollNumber || !uploadedPhoto) {
       return res.status(400).json({
-        message: "Roll number and photo are required"
+        message: "Roll number and photo are required",
       });
     }
 
     // Find student by roll number
     const student = await students.findOne({ rollNumber });
-    
+
     if (!student) {
       return res.status(404).json({
-        message: "Student not found"
+        message: "Student not found",
       });
     }
 
     // Get the stored photo from GridFS
     const photoId = new mongoose.Types.ObjectId(student.photo);
     const file = await bucket.find({ _id: photoId }).next();
-    
+
     if (!file) {
       return res.status(404).json({
-        message: "Stored photo not found"
+        message: "Stored photo not found",
       });
     }
 
     // Get stored photo buffer
     const chunks = [];
     const downloadStream = bucket.openDownloadStream(photoId);
-    
+
     await new Promise((resolve, reject) => {
-      downloadStream.on('data', chunk => chunks.push(chunk));
-      downloadStream.on('error', reject);
-      downloadStream.on('end', resolve);
+      downloadStream.on("data", (chunk) => chunks.push(chunk));
+      downloadStream.on("error", reject);
+      downloadStream.on("end", resolve);
     });
 
     const storedPhotoBuffer = Buffer.concat(chunks);
 
     // Prepare form data for Flask endpoint
     const formData = new FormData();
-    formData.append('uploaded_photo', uploadedPhoto.buffer, {
+    formData.append("uploaded_photo", uploadedPhoto.buffer, {
       filename: uploadedPhoto.originalname,
-      contentType: uploadedPhoto.mimetype
+      contentType: uploadedPhoto.mimetype,
     });
-    formData.append('stored_photo', storedPhotoBuffer, {
+    formData.append("stored_photo", storedPhotoBuffer, {
       filename: file.filename,
-      contentType: file.contentType
+      contentType: file.contentType,
     });
 
     // Send both photos to Flask endpoint
     const flaskResponse = await axios.post(
-      process.env.flask+ '/compare',
+      process.env.flask + "/compare",
       formData,
       {
         headers: {
           ...formData.getHeaders(),
         },
-      }
+      },
     );
 
     // Return the comparison result
     return res.json(flaskResponse.data);
-
   } catch (error) {
-    console.error('Error in photo comparison:', error);
+    console.error("Error in photo comparison:", error);
     return res.status(500).json({
       message: "Error processing photo comparison",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-
-module.exports={
-checkRoll,
-compareStudentPhoto
-}
+module.exports = {
+  checkRoll,
+  compareStudentPhoto,
+};

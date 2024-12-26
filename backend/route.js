@@ -32,10 +32,7 @@ const {
   getStudentInfo,
 } = require("./controllers/Students.js");
 
-const {
-  compareStudentPhoto,
-  checkRoll
-} = require("./controllers/mark.js")
+const { compareStudentPhoto, checkRoll } = require("./controllers/mark.js");
 
 router.route("/getAdmins").get(getAdmin);
 router.route("/getAdmins/:username").get(getAdmin);
@@ -63,7 +60,7 @@ router.route("/addStudent").post(addStudent);
 router.get("/students/photo/:photoId", getStudentPhoto);
 router.route("/getStudentInfo").get(getStudentInfo);
 
-
 router.route("/compare").post(compareStudentPhoto);
+router.route("/checkRoll").get(checkRoll);
 
 module.exports = router;
