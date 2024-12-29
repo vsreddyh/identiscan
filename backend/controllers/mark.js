@@ -1,11 +1,6 @@
-const { students, records, activeDates } = require("../Schema.js");
+const { students, records, activeDates, Batches } = require("../Schema.js");
 const axios = require("axios");
 const mongoose = require("mongoose");
-mongoose.connection.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "photos",
-  });
-});
 const FormData = require("form-data");
 
 const checkRoll = async (req, res) => {
@@ -53,9 +48,9 @@ const compareStudentPhoto = async (req, res) => {
   try {
     // Get the roll number and uploaded photo
     const { rollNumber } = req.body;
-    const uploadedPhoto = req.files?.photo; // express-fileupload provides this
+    const image1 = req.files?.photo; // express-fileupload provides this
 
-    if (!rollNumber || !uploadedPhoto) {
+    if (!rollNumber || !image1) {
       return res.status(400).json({
         message: "Roll number and photo are required",
       });
@@ -69,52 +64,140 @@ const compareStudentPhoto = async (req, res) => {
       });
     }
 
-    // Get the stored photo from GridFS
-    const photoId = new mongoose.Types.ObjectId(student.photo);
-    const file = await bucket.find({ _id: photoId }).next();
-    if (!file) {
-      return res.status(404).json({
-        message: "Stored photo not found",
-      });
-    }
+    // Get the stored photo as a buffer
+    const image2Response = await axios.get(
+      `http://localhost:5000/admin/students/photo/${student.photo}`,
+      { responseType: "arraybuffer" },
+    );
 
-    // Get stored photo buffer
-    const chunks = [];
-    const downloadStream = bucket.openDownloadStream(photoId);
-
-    await new Promise((resolve, reject) => {
-      downloadStream.on("data", (chunk) => chunks.push(chunk));
-      downloadStream.on("error", reject);
-      downloadStream.on("end", resolve);
-    });
-
-    const storedPhotoBuffer = Buffer.concat(chunks);
-
-    // Prepare form data for Flask endpoint
+    // Create FormData instance
     const formData = new FormData();
-    formData.append("uploaded_photo", uploadedPhoto.data, {
-      filename: uploadedPhoto.name,
-      contentType: uploadedPhoto.mimetype,
+
+    // Append image1 (the uploaded file)
+    formData.append("image1", image1.data, {
+      filename: image1.name,
+      contentType: image1.mimetype,
     });
 
-    formData.append("stored_photo", storedPhotoBuffer, {
-      filename: file.filename,
-      contentType: file.contentType,
+    // Append image2 (the retrieved photo)
+    formData.append("image2", Buffer.from(image2Response.data), {
+      filename: "stored-photo.jpg",
+      contentType: image2Response.headers["content-type"],
     });
-    console.log(process.env.flask);
+
     // Send both photos to Flask endpoint
-    const flaskResponse = await axios.get(
-      `${process.env.flask}/hello`,
+    const flaskResponse = await axios.post(
+      `https://9846-2405-201-c00e-694f-e545-7a80-1826-1c92.ngrok-free.app/compare`,
       formData,
       {
-        headers: formData.getHeaders(),
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+        headers: {
+          ...formData.getHeaders(),
+        },
       },
     );
 
-    // Return the comparison result
-    return res.json(flaskResponse.data);
+    if (!flaskResponse.data.face_recognition.success) {
+      console.log(flaskResponse.data);
+      return res
+        .status(400)
+        .json({ message: flaskResponse.data.face_recognition.error });
+    }
+    // Get current date and time
+    let now = new Date();
+    const currentHour = now.getHours();
+    const currentDate = new Date(now.setHours(0, 0, 0, 0));
+    now = new Date();
+
+    // Check for existing record for today
+    const existingRecord = await records.findOne({
+      student: student._id,
+      date: currentDate,
+    });
+
+    // Check if it's before or after 12:00
+    if (currentHour < 12) {
+      // Check for duplicate check-in
+      if (existingRecord && existingRecord.inTime) {
+        return res.status(400).json({
+          message: "Already checked in for today",
+          inTime: existingRecord.inTime,
+        });
+      }
+
+      // Create new attendance record
+      const newRecord = new records({
+        student: student._id,
+        batch: student.batch,
+        date: currentDate,
+        inTime: now,
+      });
+      await newRecord.save();
+
+      return res.json({
+        ...flaskResponse.data,
+        message: "Attendance marked successfully",
+        inTime: now,
+      });
+    } else {
+      // Check if record exists
+      if (!existingRecord) {
+        return res.status(400).json({
+          message: "No check-in record found for today",
+        });
+      }
+
+      // Check for duplicate check-out
+      if (existingRecord.outTime) {
+        return res.status(400).json({
+          message: "Already checked out for today",
+          outTime: existingRecord.outTime,
+        });
+      }
+
+      // Calculate hours difference
+      const hoursDiff = (now - existingRecord.inTime) / (1000 * 60 * 60);
+
+      if (hoursDiff < 6) {
+        const remainingHours = Math.ceil(6 - hoursDiff);
+        const remainingMinutes = Math.ceil((6 - hoursDiff) * 60);
+        return res.status(400).json({
+          message: `Wait for another ${remainingHours} hours and ${remainingMinutes % 60} minutes before checking out`,
+        });
+      }
+
+      // Update record with out time
+      existingRecord.outTime = now;
+      await existingRecord.save();
+
+      // Increment present days and update percentage
+      const batch = await Batches.findById(student.batch);
+
+      // Get total active days
+      const totalActiveDays = await activeDates.countDocuments({
+        batch: student.batch,
+        year: batch.year,
+        class: student.class,
+      });
+
+      // Update student record
+      const updatedStudent = await students.findByIdAndUpdate(
+        student._id,
+        {
+          $inc: { noOfPresentDays: 1 },
+          $set: {
+            percentage: ((student.noOfPresentDays + 1) / totalActiveDays) * 100,
+          },
+        },
+        { new: true },
+      );
+
+      return res.json({
+        ...flaskResponse.data,
+        message: "Checkout successful",
+        attendance: updatedStudent.percentage,
+        outTime: now,
+      });
+    }
   } catch (error) {
     console.error("Error in photo comparison:", error);
     return res.status(500).json({

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
+import FormData from "form-data";
 
 const VirtualKeyboard = ({ onKeyPress, onDelete }) => {
   const [keyWidth, setKeyWidth] = useState(32);
@@ -54,13 +55,12 @@ const App = () => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [cameraError, setCameraError] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [step, setStep] = useState("enter-roll"); // Steps: enter-roll, camera, preview, success
+  const [step, setStep] = useState("enter-roll");
   const [stream, setStream] = useState(null);
   const [countdown, setCountdown] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const timeoutRef = useRef(null);
-
   // Handle physical keyboard input
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -162,6 +162,7 @@ const App = () => {
         if (mediaStream) {
           mediaStream.getTracks().forEach((track) => track.stop());
         }
+        setErrorMessage("Timeout");
         setStep("enter-roll");
       });
     } catch (err) {
@@ -190,7 +191,10 @@ const App = () => {
             stream.getTracks().forEach((track) => track.stop());
           }
           setStep("preview");
-          startCountdown(10, () => setStep("enter-roll"));
+          startCountdown(10, () => {
+            setErrorMessage("Timeout");
+            setStep("enter-roll");
+          });
         },
         "image/jpeg",
         0.8,
@@ -199,7 +203,6 @@ const App = () => {
   };
 
   const submitAttendance = () => {
-    // Clear any existing timeout before submitting
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -207,18 +210,14 @@ const App = () => {
 
     const formData = new FormData();
     formData.append("rollNumber", rollNumber);
-    formData.append("image", capturedImage, `${rollNumber}_photo.jpg`);
+    formData.append("photo", capturedImage);
 
     axios
-      .post(
-        `${import.meta.env.VITE_SERVER}/admin/compareStudentPhoto`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+      .post(`${import.meta.env.VITE_SERVER}/admin/compare`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-      )
+      })
       .then(() => {
         setStep("success");
         timeoutRef.current = setTimeout(() => {
@@ -228,8 +227,9 @@ const App = () => {
         }, 3000);
       })
       .catch((err) => {
+        console.log(err);
         setErrorMessage(
-          err.response?.data?.error || "Failed to mark attendance",
+          err.response?.data?.message || "Failed to mark attendance",
         );
       });
   };
@@ -239,7 +239,6 @@ const App = () => {
       <h1 className="title">Identiscan</h1>
 
       {errorMessage && <div className="error-message">{errorMessage}</div>}
-
       <div className="input-container">
         <input
           type="text"
