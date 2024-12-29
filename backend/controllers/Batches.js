@@ -96,7 +96,8 @@ const deleteBatch = async (req, res) => {
     }
 
     // Delete the batch by _id
-    await Batches.deleteOne({ _id: id });
+    // await Batches.deleteOne({ _id: id });
+    await batchToDelete.deleteOne();
 
     // Get the updated list of batches
     const batches = await Batches.find({});
