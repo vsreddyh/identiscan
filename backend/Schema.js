@@ -66,6 +66,20 @@ const batchSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
+batchSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  try {
+    const batchId = this._id; // Access the current batch's ID
+
+    // Find and delete all classes associated with the batch
+    await mongoose.model("Classes").deleteMany({ batch: batchId });
+    console.log(`Classes associated with batch ${batchId} have been deleted.`);
+    next(); // Proceed with deleting the batch
+  } catch (err) {
+    console.error("Error while deleting associated classes:", err);
+    next(err); // Pass the error to the next middleware
+  }
+});
+
 const classSchema = new mongoose.Schema(
   {
     className: String,
