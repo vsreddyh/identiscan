@@ -6,6 +6,7 @@ mongoose.connection.once("open", () => {
     bucketName: "photos",
   });
 });
+const FormData = require("form-data");
 
 const checkRoll = async (req, res) => {
   try {
@@ -50,9 +51,9 @@ const checkRoll = async (req, res) => {
 
 const compareStudentPhoto = async (req, res) => {
   try {
-    // Get the roll number and uploaded photo from request
+    // Get the roll number and uploaded photo
     const { rollNumber } = req.body;
-    const uploadedPhoto = req.body; // Assuming you're using multer or similar middleware
+    const uploadedPhoto = req.files?.photo; // express-fileupload provides this
 
     if (!rollNumber || !uploadedPhoto) {
       return res.status(400).json({
@@ -62,17 +63,15 @@ const compareStudentPhoto = async (req, res) => {
 
     // Find student by roll number
     const student = await students.findOne({ rollNumber });
-
-    if (!student) {
+    if (!student || !student.photo) {
       return res.status(404).json({
-        message: "Student not found",
+        message: "Student or student photo not found",
       });
     }
 
     // Get the stored photo from GridFS
     const photoId = new mongoose.Types.ObjectId(student.photo);
     const file = await bucket.find({ _id: photoId }).next();
-
     if (!file) {
       return res.status(404).json({
         message: "Stored photo not found",
@@ -93,23 +92,24 @@ const compareStudentPhoto = async (req, res) => {
 
     // Prepare form data for Flask endpoint
     const formData = new FormData();
-    formData.append("uploaded_photo", uploadedPhoto.buffer, {
-      filename: uploadedPhoto.originalname,
+    formData.append("uploaded_photo", uploadedPhoto.data, {
+      filename: uploadedPhoto.name,
       contentType: uploadedPhoto.mimetype,
     });
+
     formData.append("stored_photo", storedPhotoBuffer, {
       filename: file.filename,
       contentType: file.contentType,
     });
-
+    console.log(process.env.flask);
     // Send both photos to Flask endpoint
-    const flaskResponse = await axios.post(
-      process.env.flask + "/compare",
+    const flaskResponse = await axios.get(
+      `${process.env.flask}/hello`,
       formData,
       {
-        headers: {
-          ...formData.getHeaders(),
-        },
+        headers: formData.getHeaders(),
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       },
     );
 
