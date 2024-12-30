@@ -87,7 +87,7 @@ const compareStudentPhoto = async (req, res) => {
 
     // Send both photos to Flask endpoint
     const flaskResponse = await axios.post(
-      `https://9846-2405-201-c00e-694f-e545-7a80-1826-1c92.ngrok-free.app/compare`,
+      `https://5105-2409-40f0-103b-db44-14a9-8712-b489-bcf0.ngrok-free.app/compare`,
       formData,
       {
         headers: {
@@ -101,6 +101,10 @@ const compareStudentPhoto = async (req, res) => {
       return res
         .status(400)
         .json({ message: flaskResponse.data.face_recognition.error });
+    }
+    if (flaskResponse.data.face_recognition.result == "DIFFERENT PEOPLE") {
+      console.log(flaskResponse.data);
+      return res.status(400).json({ message: "Face didn't match. Try Again" });
     }
     // Get current date and time
     let now = new Date();
