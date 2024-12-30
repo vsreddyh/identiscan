@@ -1,4 +1,4 @@
-const { Batches, students } = require("../Schema.js");
+const { Batches, students, activeDates, records } = require("../Schema.js");
 
 const getBatch = async (req, res) => {
   try {
@@ -157,10 +157,11 @@ const promoteBatch = async (req, res) => {
 
     batchToPromote.year = batchToPromote.year + 1;
     await batchToPromote.save();
-
+    await activeDates.deleteMany({ batch: id });
+    await records.deleteMany({ batch: id });
     await students.updateMany(
-      { batch: id, year: batchToPromote.year - 1 },
-      { $set: { noOfPresentDays: 0 } },
+      { batch: id },
+      { $set: { noOfPresentDays: 0, percentage: 0 } },
     );
 
     // Get the updated list of batches

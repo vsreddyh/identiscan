@@ -106,6 +106,8 @@ const compareStudentPhoto = async (req, res) => {
       console.log(flaskResponse.data);
       return res.status(400).json({ message: "Face didn't match. Try Again" });
     }
+    console.log(flaskResponse.data);
+
     // Get current date and time
     let now = new Date();
     const currentHour = now.getHours();

@@ -188,14 +188,12 @@ const getStudentInfo = async (req, res) => {
         _id: new mongoose.Types.ObjectId(studentId),
       });
     }
-    console.log(student, studentId);
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
     }
 
     // Get batch info
     const batchOfStudent = await Batches.findOne({ _id: student.batch });
-    console.log(batchOfStudent);
     const classOfStudent = await classes.findOne({ _id: student.class });
     // Get total active days for the batch
     const totalDays = await activeDates.countDocuments({
@@ -207,6 +205,7 @@ const getStudentInfo = async (req, res) => {
     const last14ActiveDays = await activeDates
       .find({
         batch: student.batch,
+        class: student.class,
         year: batchOfStudent.year,
       })
       .sort({ date: -1 }) // Sort by date in descending order
@@ -217,7 +216,6 @@ const getStudentInfo = async (req, res) => {
     const attendanceRecords = await records
       .find({
         student: student._id,
-        batch: student.batch,
       })
       .lean();
 
@@ -233,7 +231,7 @@ const getStudentInfo = async (req, res) => {
     });
 
     // Sort by date in ascending order for consistent display
-
+    console.log("yoyoyoyoy", last14ActiveDays);
     // Return the student info
     res.status(200).json({
       id: student.id,
