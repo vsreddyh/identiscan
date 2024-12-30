@@ -66,19 +66,55 @@ const batchSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
+// batchSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+//   try {
+//     const batchId = this._id; // Access the current batch's ID
+
+//     // Find and delete all classes associated with the batch
+//     await mongoose.model("Classes").deleteMany({ batch: batchId });
+//     // console.log(`Classes associated with batch ${batchId} have been deleted.`);
+//     next(); // Proceed with deleting the batch
+//   } catch (err) {
+//     console.error("Error while deleting associated classes:", err);
+//     next(err); // Pass the error to the next middleware
+//   }
+// });
+
 batchSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
   try {
     const batchId = this._id; // Access the current batch's ID
 
-    // Find and delete all classes associated with the batch
+    // Find all classes associated with the batch
+    const classIds = await mongoose
+      .model("Classes")
+      .find({ batch: batchId }, { _id: 1 });
+
+    // Delete all students linked to these classes
+    await mongoose
+      .model("students")
+      .deleteMany({ class: { $in: classIds.map((cls) => cls._id) } });
+
+    // Delete all classes associated with the batch
     await mongoose.model("Classes").deleteMany({ batch: batchId });
-    // console.log(`Classes associated with batch ${batchId} have been deleted.`);
+
+    // Delete all records associated with the batch
+    await mongoose.model("records").deleteMany({ batch: batchId });
+
+    // Delete all activeDates associated with the batch
+    await mongoose.model("dates").deleteMany({ batch: batchId });
+
+
+    console.log(
+      `Batch ${batchId} deleted, along with associated classes and students.`
+    );
+
     next(); // Proceed with deleting the batch
   } catch (err) {
-    console.error("Error while deleting associated classes:", err);
+    console.error("Error while deleting associated classes and students:", err);
     next(err); // Pass the error to the next middleware
   }
 });
+
 
 const classSchema = new mongoose.Schema(
   {
@@ -91,13 +127,34 @@ const classSchema = new mongoose.Schema(
 classSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
   try {
     const classId = this._id; // The id of the class being deleted
-    await mongoose.model("students").deleteMany({ class: classId }); // Delete all students linked to this class
-    console.log(`Students associated with class ${classId} have been deleted.`);
+
+    // Find all students linked to this class
+    const studentIds = await mongoose
+      .model("students")
+      .find({ class: classId }, { _id: 1 });
+
+    // Delete all records linked to these students
+    await mongoose
+      .model("records")
+      .deleteMany({ student: { $in: studentIds.map((student) => student._id) } });
+
+    // Delete all students linked to this class
+    await mongoose.model("students").deleteMany({ class: classId });
+
+    // Delete all activeDates associated with this class
+    await mongoose.model("dates").deleteMany({ class: classId });
+
+    console.log(
+      `Class ${classId} deleted, along with associated students, records, and active dates.`
+    );
+
     next(); // Proceed with the deletion
   } catch (error) {
+    console.error("Error while deleting associated data:", error);
     next(error); // Pass the error to the next middleware or handler
   }
 });
+
 
 const students = mongoose.model("students", studentSchema);
 const admins = mongoose.model("admins", adminSchema);
