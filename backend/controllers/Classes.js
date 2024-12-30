@@ -81,7 +81,8 @@ const deleteClass = async (req, res) => {
     }
 
     // Delete the class from the database
-    await classes.deleteOne({ _id: classId });
+    // await classes.deleteOne({ _id: classId });
+    await classToDelete.deleteOne();
 
     // Fetch all remaining classes associated with the batch
     const updatedClasses = await classes.find(

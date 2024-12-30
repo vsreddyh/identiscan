@@ -72,7 +72,7 @@ batchSchema.pre("deleteOne", { document: true, query: false }, async function (n
 
     // Find and delete all classes associated with the batch
     await mongoose.model("Classes").deleteMany({ batch: batchId });
-    console.log(`Classes associated with batch ${batchId} have been deleted.`);
+    // console.log(`Classes associated with batch ${batchId} have been deleted.`);
     next(); // Proceed with deleting the batch
   } catch (err) {
     console.error("Error while deleting associated classes:", err);
@@ -87,6 +87,17 @@ const classSchema = new mongoose.Schema(
   },
   { versionKey: false },
 );
+
+classSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  try {
+    const classId = this._id; // The id of the class being deleted
+    await mongoose.model("students").deleteMany({ class: classId }); // Delete all students linked to this class
+    console.log(`Students associated with class ${classId} have been deleted.`);
+    next(); // Proceed with the deletion
+  } catch (error) {
+    next(error); // Pass the error to the next middleware or handler
+  }
+});
 
 const students = mongoose.model("students", studentSchema);
 const admins = mongoose.model("admins", adminSchema);
