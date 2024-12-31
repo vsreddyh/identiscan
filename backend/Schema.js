@@ -26,25 +26,6 @@ const studentSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
-studentSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
-  try {
-    const studentId = this._id;
-    if (this.photo) {
-      const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-        bucketName: "photos",
-      });
-      await bucket.delete(this.photo); // Delete the photo from GridFS
-      console.log(`Photo with ID ${this.photo} deleted.`);
-    }
-    // Delete all records linked to this student
-    await mongoose.model("records").deleteMany({ student: studentId });
-    next();
-  } catch (error) {
-    console.error("Error deleting photo:", error);
-    next(error);
-  }
-});
-
 const adminSchema = new mongoose.Schema(
   {
     username: String,
@@ -109,23 +90,18 @@ batchSchema.pre("deleteOne", { document: true, query: false }, async function (n
       .find({ batch: batchId }, { _id: 1 });
 
     // Delete all students linked to these classes
-    // await mongoose
-    //   .model("students")
-    //   .deleteMany({ class: { $in: classIds.map((cls) => cls._id) } });
+    await mongoose
+      .model("students")
+      .deleteMany({ class: { $in: classIds.map((cls) => cls._id) } });
 
-    // // Delete all classes associated with the batch
-    // await mongoose.model("Classes").deleteMany({ batch: batchId });
-
-    // Delete each class (students and their photos will be deleted via classSchema middleware)
-    for (const classId of classIds) {
-      await mongoose.model("Classes").deleteOne();
-    }
+    // Delete all classes associated with the batch
+    await mongoose.model("Classes").deleteMany({ batch: batchId });
 
     // Delete all records associated with the batch
-    // await mongoose.model("records").deleteMany({ batch: batchId });
+    await mongoose.model("records").deleteMany({ batch: batchId });
 
     // Delete all activeDates associated with the batch
-    // await mongoose.model("dates").deleteMany({ batch: batchId });
+    await mongoose.model("dates").deleteMany({ batch: batchId });
 
 
     console.log(
@@ -158,16 +134,12 @@ classSchema.pre("deleteOne", { document: true, query: false }, async function (n
       .find({ class: classId }, { _id: 1 });
 
     // Delete all records linked to these students
-    // await mongoose
-    //   .model("records")
-    //   .deleteMany({ student: { $in: studentIds.map((student) => student._id) } });
+    await mongoose
+      .model("records")
+      .deleteMany({ student: { $in: studentIds.map((student) => student._id) } });
 
-    // // Delete all students linked to this class
-    // await mongoose.model("students").deleteMany({ class: classId });
-
-    for (const student of studentIds) {
-      await student.deleteOne();
-    }
+    // Delete all students linked to this class
+    await mongoose.model("students").deleteMany({ class: classId });
 
     // Delete all activeDates associated with this class
     await mongoose.model("dates").deleteMany({ class: classId });
