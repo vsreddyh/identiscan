@@ -66,7 +66,7 @@ const compareStudentPhoto = async (req, res) => {
 
     // Get the stored photo as a buffer
     const image2Response = await axios.get(
-      `http://localhost:5000/admin/students/photo/${student.photo}`,
+      `http://localhost:5003/admin/students/photo/${student.photo}`,
       { responseType: "arraybuffer" },
     );
 
@@ -87,7 +87,7 @@ const compareStudentPhoto = async (req, res) => {
 
     // Send both photos to Flask endpoint
     const flaskResponse = await axios.post(
-      `https://5105-2409-40f0-103b-db44-14a9-8712-b489-bcf0.ngrok-free.app/compare`,
+      `http://localhost:5004/compare`,
       formData,
       {
         headers: {
@@ -96,15 +96,8 @@ const compareStudentPhoto = async (req, res) => {
       },
     );
 
-    if (!flaskResponse.data.face_recognition.success) {
-      console.log(flaskResponse.data);
-      return res
-        .status(400)
-        .json({ message: flaskResponse.data.face_recognition.error });
-    }
-    if (flaskResponse.data.face_recognition.result == "DIFFERENT PEOPLE") {
-      console.log(flaskResponse.data);
-      return res.status(400).json({ message: "Face didn't match. Try Again" });
+    if (!flaskResponse.data.success) {
+      return res.status(400).json({ message: flaskResponse.error });
     }
     console.log(flaskResponse.data);
 
