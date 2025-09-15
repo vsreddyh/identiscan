@@ -1,5 +1,3 @@
-/node_modules
-/dist
-/out/my-electron-app-linux-x64
-/out/make/rpm
-/out/make/deb
+node_modules
+dist
+out
