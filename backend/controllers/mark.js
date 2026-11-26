@@ -3,6 +3,10 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const FormData = require("form-data");
 
+const BACKEND_URL =
+  process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5003}`;
+const FACE_API_URL = process.env.FACE_API_URL || "http://localhost:5004";
+
 const checkRoll = async (req, res) => {
   try {
     const { rollNumber } = req.query;
@@ -64,9 +68,25 @@ const compareStudentPhoto = async (req, res) => {
       });
     }
 
+    // Attendance is only marked on days an admin has activated for this
+    // batch/class. checkRoll() enforces the same rule for the UI flow; this
+    // check keeps direct /admin/compare calls from bypassing it.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const activeDate = await activeDates.findOne({
+      date: today,
+      batch: student.batch,
+      class: student.class,
+    });
+    if (!activeDate) {
+      return res.status(404).json({
+        message: "No active date found for the student.",
+      });
+    }
+
     // Get the stored photo as a buffer
     const image2Response = await axios.get(
-      `http://localhost:5003/admin/students/photo/${student.photo}`,
+      `${BACKEND_URL}/admin/students/photo/${student.photo}`,
       { responseType: "arraybuffer" },
     );
 
@@ -86,18 +106,19 @@ const compareStudentPhoto = async (req, res) => {
     });
 
     // Send both photos to Flask endpoint
-    const flaskResponse = await axios.post(
-      `http://localhost:5004/compare`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-        },
+    const flaskResponse = await axios.post(`${FACE_API_URL}/compare`, formData, {
+      headers: {
+        ...formData.getHeaders(),
       },
-    );
+      // Flask returns 400/500 with a JSON error body; read it instead of
+      // letting axios turn it into a generic exception.
+      validateStatus: () => true,
+    });
 
     if (!flaskResponse.data.success) {
-      return res.status(400).json({ message: flaskResponse.error });
+      return res.status(400).json({
+        message: flaskResponse.data.error || "Face comparison failed",
+      });
     }
     console.log(flaskResponse.data);
 

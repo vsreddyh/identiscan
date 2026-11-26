@@ -11,16 +11,24 @@ batches/classes/students and view attendance percentages.
 |---|---|---|
 | Express API | `backend/` | `5003` (`PORT`) |
 | Flask face service | `flaskapp/face_recog_api.py` | `5004` |
-| Attendance frontend (React 19 + Vite) | `Attendance_frontend/` | `VITE_SERVER` → backend URL |
-| Admin frontend (React 18 + Vite) | `Admin_frontend/` | same backend |
+| Attendance frontend (React 18 + Vite) | `Attendance_frontend/` | `VITE_SERVER` → backend URL |
+| Admin frontend (React 19 + Vite) | `Admin_frontend/` | same backend |
 | Linux touchscreen app (Electron) | `my-electron-app/` | wraps Attendance frontend |
 
-Flow: Attendance frontend → `POST /admin/compare` (roll + live photo) →
-backend pulls the enrolled photo from MongoDB GridFS (`photos` bucket) →
-forwards both images to Flask (`:5004`), which returns a dlib 128-d embedding
-distance (match threshold 0.6) → backend writes the `records` doc.
-Rule: check-in before 12:00, checkout needs a ≥ 6h gap, one in/out per day
-(`backend/controllers/mark.js`).
+Flow: Attendance frontend → `GET /admin/checkRoll` (roll number) → backend
+verifies that an active date exists for the student's batch/class today →
+`POST /admin/compare` (roll + live photo) → backend pulls the enrolled photo
+from MongoDB GridFS (`photos` bucket) → forwards both images to Flask (`:5004`),
+which returns a dlib 128-d embedding distance (match threshold 0.6) → backend
+writes the `records` doc.
+
+Rule (`backend/controllers/mark.js`):
+
+- Before 12:00 the scan marks check-in. A second scan before noon is rejected
+  as "already checked in".
+- After 12:00 the scan is treated as check-out. It requires a morning check-in
+  and a ≥ 6-hour gap; a first scan after noon has no morning check-in, so it is
+  rejected. There is no late check-in path.
 
 ## Prerequisites
 
@@ -45,11 +53,24 @@ cd Admin_frontend && VITE_SERVER=http://localhost:5003 npm run dev
 
 Notes:
 
-- Inter-service URLs default to localhost (`backend` → Flask `:5004`);
-  set them explicitly for any non-local deploy.
-- Auth is session-cookie + bcrypt; students are identified by roll number.
-- Deleting a batch cascades to its classes, students, records, and dates
-  (Mongoose `pre("deleteOne")` hooks in `backend/Schema.js`).
+- `MONGODB_URI` is the supported name; the older `url` variable is still read as
+  a fallback.
+- Inter-service URLs default to localhost. Set `BACKEND_URL` (default
+  `http://localhost:5003`) and `FACE_API_URL` (default `http://localhost:5004`)
+  for non-local deploys.
+- Auth: passwords are hashed with bcrypt and `express-session` is configured
+  with a MongoDB store, but **no route enforces the session yet**. Every
+  admin/batch/class/student/compare route is public, `cors()` is not configured
+  for credentials, and the frontends do not send cookies. In particular
+  `POST /admin/createAdmin` and `POST /admin/deleteAdmin/:id` are public. Add
+  guards before exposing the API beyond a trusted network.
+- Check-in requires an active date for the student's batch + class on the
+  current day, created with `POST /admin/activateToday` (the admin dashboard has
+  a button for this). Without one, `checkRoll` and `compare` return 404.
+- Deleting a batch cascades to its classes, students, records, active dates, and
+  the students' GridFS photos; deleting a class cascades to its students,
+  records, active dates, and photos (Mongoose `pre("deleteOne")` hooks in
+  `backend/Schema.js`). There is no endpoint to delete an individual student.
 
 ## Face model
 

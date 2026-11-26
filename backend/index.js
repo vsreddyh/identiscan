@@ -5,22 +5,23 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
-const { url } = dotenv.config();
-const fileUpload = require("express-fileupload");
 // Load environment variables
+dotenv.config();
+const fileUpload = require("express-fileupload");
 
 const app = express();
 const PORT = process.env.PORT || 5003;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.url;
 app.use(fileUpload());
 // MongoDB Connection
 mongoose
-  .connect(process.env.url)
+  .connect(MONGODB_URI)
   .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // MongoDB Session Store
 const store = new MongoDBStore({
-  uri: process.env.url,
+  uri: MONGODB_URI,
   collection: "sessions",
 });
 
