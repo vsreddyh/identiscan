@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
-url = process.env.url;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.url;
 mongoose
-  .connect(url, {
+  .connect(MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -80,6 +80,33 @@ const batchSchema = new mongoose.Schema(
 //   }
 // });
 
+// GridFS files are not removed by deleteMany(), so cascade hooks must delete
+// the enrolled photos explicitly to avoid leaving orphaned face images behind.
+async function deleteStudentPhotos(studentIds) {
+  if (!studentIds.length) {
+    return;
+  }
+
+  const db = mongoose.connection.db;
+  if (!db) {
+    return;
+  }
+
+  const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: "photos" });
+  const studentsWithPhotos = await mongoose
+    .model("students")
+    .find({ _id: { $in: studentIds }, photo: { $ne: null } }, { photo: 1 })
+    .lean();
+
+  await Promise.all(
+    studentsWithPhotos.map(({ photo }) =>
+      bucket.delete(photo).catch((error) => {
+        console.error(`Unable to delete GridFS photo ${photo}:`, error.message);
+      }),
+    ),
+  );
+}
+
 batchSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
   try {
     const batchId = this._id; // Access the current batch's ID
@@ -88,6 +115,13 @@ batchSchema.pre("deleteOne", { document: true, query: false }, async function (n
     const classIds = await mongoose
       .model("Classes")
       .find({ batch: batchId }, { _id: 1 });
+
+    const batchStudentIds = await mongoose
+      .model("students")
+      .find({ class: { $in: classIds.map((cls) => cls._id) } }, { _id: 1 });
+
+    // Delete the enrolled photos from GridFS before removing the students
+    await deleteStudentPhotos(batchStudentIds.map((student) => student._id));
 
     // Delete all students linked to these classes
     await mongoose
@@ -132,6 +166,9 @@ classSchema.pre("deleteOne", { document: true, query: false }, async function (n
     const studentIds = await mongoose
       .model("students")
       .find({ class: classId }, { _id: 1 });
+
+    // Delete the enrolled photos from GridFS before removing the students
+    await deleteStudentPhotos(studentIds.map((student) => student._id));
 
     // Delete all records linked to these students
     await mongoose

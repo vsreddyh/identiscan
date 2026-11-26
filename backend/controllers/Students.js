@@ -226,12 +226,8 @@ const getStudentInfo = async (req, res) => {
         moment(record.date).isSame(activeDay.date, "day"),
       );
 
-      return;
-      isPresent: !!record;
+      return !!record;
     });
-
-    // Sort by date in ascending order for consistent display
-    console.log("yoyoyoyoy", last14ActiveDays);
     // Return the student info
     res.status(200).json({
       id: student.id,
